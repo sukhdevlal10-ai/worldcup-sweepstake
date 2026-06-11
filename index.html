@@ -50,13 +50,78 @@
   }
 
   /* ---- BACKGROUND ---- */
+  #bg-canvas{
+    position:fixed;inset:0;
+    width:100%;height:100%;
+    z-index:0;pointer-events:none;
+  }
+  .spotlight{
+    position:fixed;
+    top:-20%;
+    width:2px;
+    height:140vh;
+    transform-origin:top center;
+    pointer-events:none;
+    z-index:0;
+    opacity:0;
+  }
+  .spotlight::after{
+    content:'';
+    position:absolute;
+    top:0;left:50%;
+    transform:translateX(-50%);
+    width:300px;height:100%;
+    background:linear-gradient(180deg,
+      rgba(245,200,66,.12) 0%,
+      rgba(245,200,66,.04) 40%,
+      transparent 100%);
+    clip-path:polygon(46% 0%, 54% 0%, 100% 100%, 0% 100%);
+  }
+  .spotlight-1{
+    left:15%;
+    animation:sweep1 14s ease-in-out infinite;
+  }
+  .spotlight-2{
+    left:50%;
+    animation:sweep2 18s ease-in-out infinite;
+    animation-delay:-6s;
+  }
+  .spotlight-3{
+    left:82%;
+    animation:sweep3 16s ease-in-out infinite;
+    animation-delay:-10s;
+  }
+  @keyframes sweep1{
+    0%  {opacity:0;transform:rotate(-25deg)}
+    10% {opacity:.7}
+    45% {opacity:.5;transform:rotate(10deg)}
+    55% {opacity:.7;transform:rotate(10deg)}
+    90% {opacity:.6;transform:rotate(-25deg)}
+    100%{opacity:0;transform:rotate(-25deg)}
+  }
+  @keyframes sweep2{
+    0%  {opacity:0;transform:rotate(15deg)}
+    10% {opacity:.5}
+    50% {opacity:.4;transform:rotate(-20deg)}
+    90% {opacity:.5;transform:rotate(15deg)}
+    100%{opacity:0;transform:rotate(15deg)}
+  }
+  @keyframes sweep3{
+    0%  {opacity:0;transform:rotate(20deg)}
+    12% {opacity:.6}
+    50% {opacity:.5;transform:rotate(-12deg)}
+    88% {opacity:.6;transform:rotate(20deg)}
+    100%{opacity:0;transform:rotate(20deg)}
+  }
+  /* pitch lines overlay — subtle grid in bg */
   body::before{
     content:'';
     position:fixed;
     inset:0;
     background:
-      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(245,200,66,.07) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 40% at 80% 110%, rgba(79,142,247,.06) 0%, transparent 60%);
+      radial-gradient(ellipse 70% 50% at 50% 0%,   rgba(245,200,66,.055) 0%, transparent 65%),
+      radial-gradient(ellipse 50% 40% at 10% 100%,  rgba(79,142,247,.045) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 90% 100%,  rgba(245,200,66,.03) 0%, transparent 60%);
     pointer-events:none;
     z-index:0;
   }
@@ -645,6 +710,12 @@
 </style>
 </head>
 <body>
+
+<!-- Background layers -->
+<canvas id="bg-canvas"></canvas>
+<div class="spotlight spotlight-1"></div>
+<div class="spotlight spotlight-2"></div>
+<div class="spotlight spotlight-3"></div>
 
 <nav class="nav">
   <button class="active" onclick="showPage('rules',this)">📋 Rules</button>
@@ -1513,6 +1584,140 @@
     <div class="modal-results" id="modalResults"></div>
   </div>
 </div>
+
+
+<script>
+(function(){
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [], footballs = [];
+
+  function resize(){
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Particle types: dots + tiny footballs (hexagon approximation)
+  function randomBetween(a,b){ return a + Math.random()*(b-a); }
+
+  function createParticle(){
+    return {
+      x: randomBetween(0, W),
+      y: randomBetween(0, H),
+      r: randomBetween(1, 2.8),
+      vx: randomBetween(-0.15, 0.15),
+      vy: randomBetween(-0.4, -0.08),
+      opacity: randomBetween(0.1, 0.55),
+      opacityDir: Math.random() > 0.5 ? 1 : -1,
+      opacitySpeed: randomBetween(0.002, 0.008),
+      type: Math.random() > 0.85 ? 'ball' : 'dot',
+      rotation: randomBetween(0, Math.PI*2),
+      rotSpeed: randomBetween(-0.01, 0.01),
+    };
+  }
+
+  // Create initial particles
+  const COUNT = Math.min(120, Math.floor(W * H / 14000));
+  for(let i=0; i<COUNT; i++){
+    const p = createParticle();
+    p.y = randomBetween(0, H); // spread initially
+    particles.push(p);
+  }
+
+  // Draw a tiny football (pentagon-based)
+  function drawBall(x, y, r, rot, alpha){
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    ctx.globalAlpha = alpha * 0.6;
+    // outer circle
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(245,200,66,0.7)';
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+    // pentagon patches
+    ctx.fillStyle = 'rgba(245,200,66,0.15)';
+    ctx.fill();
+    // center pentagon
+    ctx.beginPath();
+    for(let i=0;i<5;i++){
+      const angle = (i/5)*Math.PI*2 - Math.PI/2;
+      const px = Math.cos(angle)*r*0.42;
+      const py = Math.sin(angle)*r*0.42;
+      i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(245,200,66,0.5)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Pitch circle — subtle in center
+  function drawPitchOverlay(){
+    const cx = W/2, cy = H*0.55;
+    const pr = Math.min(W,H)*0.18;
+    ctx.beginPath();
+    ctx.arc(cx, cy, pr, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.018)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // center spot
+    ctx.beginPath();
+    ctx.arc(cx, cy, 2, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    ctx.fill();
+    // halfway line
+    ctx.beginPath();
+    ctx.moveTo(W*0.1, cy);
+    ctx.lineTo(W*0.9, cy);
+    ctx.strokeStyle = 'rgba(255,255,255,0.012)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  let frame = 0;
+  function animate(){
+    requestAnimationFrame(animate);
+    ctx.clearRect(0, 0, W, H);
+
+    // Subtle pitch lines every ~120 frames fade
+    if(frame % 2 === 0) drawPitchOverlay();
+
+    particles.forEach((p, i) => {
+      // Move
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rotation += p.rotSpeed;
+
+      // Pulse opacity
+      p.opacity += p.opacityDir * p.opacitySpeed;
+      if(p.opacity > 0.55 || p.opacity < 0.05) p.opacityDir *= -1;
+
+      // Wrap around
+      if(p.y < -20) { p.y = H + 10; p.x = randomBetween(0, W); }
+      if(p.x < -20) p.x = W + 10;
+      if(p.x > W+20) p.x = -10;
+
+      if(p.type === 'ball'){
+        drawBall(p.x, p.y, p.r * 3, p.rotation, p.opacity);
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(245,200,66,${p.opacity})`;
+        ctx.fill();
+      }
+    });
+
+    frame++;
+  }
+
+  animate();
+})();
+</script>
 
 </body>
 </html>
