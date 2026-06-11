@@ -642,81 +642,92 @@
 
   // ---- FIXTURES ----
   // ---- FIXTURES ----
-  // Uses openfootball/worldcup.json — free, no API key, served via GitHub with CORS
-  // Raw JSON updated after each match
+  // openfootball/worldcup.json — free, no key, CORS-enabled via GitHub raw
+  // Format: { name, matches: [{team1,team2,date,time,round,group,ground,score:{ft:[h,a]}}] }
   const WC_JSON = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
   let scheduleLoaded = false;
   let resultsLoaded  = false;
   let allGames = [];
 
-  async function wcFetch(path) {
-    // path is ignored — we fetch the single JSON file and filter locally
+  // Safe wrapper — works even before draw is loaded
+  function safeOwner(name) {
+    try { return (typeof getTeamOwner === 'function') ? getTeamOwner(name) : null; }
+    catch(e) { return null; }
+  }
+  function safeIsMyTeam(name) {
+    try { return (typeof isMyTeam === 'function') ? isMyTeam(name) : false; }
+    catch(e) { return false; }
+  }
+
+  async function loadAllGames() {
     if (allGames.length) return allGames;
     const res = await fetch(WC_JSON);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    // openfootball format: { rounds: [ { name, matches: [ {date, team1, team2, score:{ft:[h,a]}} ] } ] }
-    const rounds = data.rounds || data.matchdays || [];
-    const games = [];
-    rounds.forEach(r => {
-      (r.matches || r.games || []).forEach(m => {
-        const ft = m.score?.ft || m.score?.fulltime || null;
-        const isDone = ft && ft.length === 2;
-        const isLive = m.score && !isDone && m.score.et == null;
-        games.push({
-          home_team:  m.team1?.name || m.team1 || '',
-          away_team:  m.team2?.name || m.team2 || '',
-          home_score: isDone ? ft[0] : null,
-          away_score: isDone ? ft[1] : null,
-          status:     isDone ? 'finished' : 'scheduled',
-          kickoff_utc: m.date + (m.time ? 'T' + m.time : 'T12:00:00'),
-          round:      r.name || '',
-          stadium:    m.stadium?.name || m.stadium || '',
-          group:      r.group || r.name || '',
-        });
-      });
+    // flat matches array
+    const matches = data.matches || [];
+    allGames = matches.map(m => {
+      const score = m.score;
+      const ft = score?.ft; // array [home, away] or null
+      const isDone = Array.isArray(ft) && ft.length === 2;
+      // parse UTC time: date="2026-06-11", time="13:00 UTC-6"
+      let kickoff = m.date || '';
+      if (m.time) {
+        const t = m.time.replace(/\s*UTC.*$/,'').trim(); // strip timezone
+        kickoff = m.date + 'T' + t + ':00Z';
+      }
+      return {
+        home_team:   m.team1 || '',
+        away_team:   m.team2 || '',
+        home_score:  isDone ? ft[0] : null,
+        away_score:  isDone ? ft[1] : null,
+        status:      isDone ? 'finished' : 'scheduled',
+        kickoff:     kickoff,
+        round:       m.round || '',
+        group:       m.group || '',
+        stadium:     m.ground || '',
+      };
     });
-    allGames = games;
-    return games;
+    return allGames;
   }
 
   function renderMatchCard(m) {
     if (!m) return '';
-    const hName  = m.home_team || m.homeTeam || '';
-    const aName  = m.away_team || m.awayTeam || '';
+    const hName  = m.home_team || '';
+    const aName  = m.away_team || '';
     if (!hName || !aName) return '';
-    const hFlag  = getFlag(hName);
-    const aFlag  = getFlag(aName);
-    const hOwner = (typeof getTeamOwner === 'function' && hName) ? getTeamOwner(hName) : null;
-    const aOwner = (typeof getTeamOwner === 'function' && aName) ? getTeamOwner(aName) : null;
-    const status = (m.status || m.match_status || 'scheduled').toLowerCase();
-    const isLive = status === 'live' || status === 'in_play' || status === '1h' || status === '2h' || status === 'ht';
-    const isDone = status === 'finished' || status === 'ft' || status === 'completed';
-    const hScore = (m.home_score !== null && m.home_score !== undefined) ? m.home_score : (isDone || isLive ? '0' : '-');
-    const aScore = (m.away_score !== null && m.away_score !== undefined) ? m.away_score : (isDone || isLive ? '0' : '-');
-    const score  = isDone || isLive ? hScore + ' – ' + aScore : 'vs';
-    const elapsed = m.elapsed_time || m.minute || '';
-    const kickoff = m.kickoff_utc || m.date || m.match_date || '';
-    const timeStr = kickoff ? new Date(kickoff).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
-    const dateStr = kickoff ? new Date(kickoff).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) : '';
-    const label  = isLive ? (elapsed ? elapsed+"'" : 'LIVE') : isDone ? 'FT' : timeStr;
-    const round  = (m.round || m.stage || m.group_name || '').toString()
-      .replace('Group Stage','GRP').replace('group','GRP')
-      .replace('Round of 32','R32').replace('Round of 16','R16')
-      .replace('Quarter-final','QF').replace('Semi-final','SF')
-      .replace('Third place','3RD').replace('Final','FINAL');
+    const hFlag  = (typeof getFlag === 'function') ? getFlag(hName) : '🏳️';
+    const aFlag  = (typeof getFlag === 'function') ? getFlag(aName) : '🏳️';
+    const hOwner = safeOwner(hName);
+    const aOwner = safeOwner(aName);
+    const isDone = m.status === 'finished';
+    const hScore = m.home_score !== null && m.home_score !== undefined ? m.home_score : '-';
+    const aScore = m.away_score !== null && m.away_score !== undefined ? m.away_score : '-';
+    const score  = isDone ? hScore + ' – ' + aScore : 'vs';
+    // Parse kickoff for display
+    let timeStr = '', dateStr = '';
+    if (m.kickoff) {
+      try {
+        const d = new Date(m.kickoff);
+        timeStr = d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        dateStr = d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+      } catch(e) { timeStr = m.kickoff; }
+    }
+    const label  = isDone ? 'FT' : (timeStr || 'TBC');
+    const round  = (m.round || m.group || '').replace('Matchday ','MD');
+    const group  = m.group || '';
+    const venue  = m.stadium || '';
     const hasMyTeam = hOwner || aOwner;
-    const venue = m.stadium || m.venue || '';
-    return `<div class="result-card ${isLive?'live-match':''} ${hasMyTeam?'has-my-team':''}">
+    return `<div class="result-card ${hasMyTeam?'has-my-team':''}">
       <div class="rc-team">
         <span class="rc-flag">${hFlag}</span>
         <span class="rc-tname">${hName}</span>
         ${hOwner?`<span class="rc-owner">${hOwner.toUpperCase()}</span>`:''}
       </div>
       <div class="rc-middle">
-        <div class="rc-score ${isLive?'live':''}">${score}</div>
-        <div class="rc-label ${isLive?'live-lbl':''}">${label}</div>
-        <div class="rc-round">${round}${venue?' · '+venue:''}</div>
+        <div class="rc-score ${isDone?'':'pending'}">${score}</div>
+        <div class="rc-label">${label}</div>
+        <div class="rc-round">${group}${venue?' · '+venue:''}</div>
       </div>
       <div class="rc-team right">
         ${aOwner?`<span class="rc-owner">${aOwner.toUpperCase()}</span>`:''}
@@ -729,13 +740,16 @@
   function groupByDate(matches, descending=false) {
     const byDate = {};
     const sorted = [...matches].sort((a,b) => {
-      const da = new Date(a.kickoff_utc||a.date||a.match_date||0);
-      const db = new Date(b.kickoff_utc||b.date||b.match_date||0);
+      const da = new Date(a.kickoff||0);
+      const db = new Date(b.kickoff||0);
       return descending ? db-da : da-db;
     });
     sorted.forEach(m => {
-      const raw = m.kickoff_utc||m.date||m.match_date||'';
-      const key = raw ? new Date(raw).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}) : 'TBC';
+      let key = 'TBC';
+      if (m.kickoff) {
+        try { key = new Date(m.kickoff).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}); }
+        catch(e) { key = m.kickoff.slice(0,10); }
+      }
       if (!byDate[key]) byDate[key] = [];
       byDate[key].push(m);
     });
@@ -767,16 +781,12 @@
     if (scheduleLoaded) return;
     show('schedule-loading'); hide('schedule-container');
     try {
-      const data = await wcFetch('');
-      const games = Array.isArray(data) ? data : (data.data || data.games || data.matches || []);
-      const upcoming = games.filter(m => {
-        const st = (m.status||m.match_status||'').toLowerCase();
-        return st === 'scheduled' || st === 'tbd' || st === '' || st === 'upcoming' || (!m.home_score && !m.away_score && st !== 'finished' && st !== 'ft' && st !== 'completed');
-      });
+      const games = await loadAllGames();
+      const upcoming = games.filter(m => m.status !== 'finished');
       hide('schedule-loading'); show('schedule-container');
       document.getElementById('schedule-container').innerHTML = upcoming.length
         ? renderGrouped(upcoming)
-        : '<div class="results-empty">No upcoming fixtures — all matches may have been played!</div>';
+        : '<div class="results-empty">All matches have been played!</div>';
       scheduleLoaded = true;
     } catch(e) {
       hide('schedule-loading'); show('schedule-container');
@@ -788,28 +798,18 @@
     if (resultsLoaded) return;
     show('results-loading'); hide('results-container');
     try {
-      const data = await wcFetch('');
-      const games = Array.isArray(data) ? data : (data.data || data.games || data.matches || []);
-      const done = games.filter(m => {
-        const st = (m.status||m.match_status||'').toLowerCase();
-        return st === 'finished' || st === 'ft' || st === 'completed' || (m.home_score !== null && m.home_score !== undefined && st !== 'scheduled' && st !== 'live');
-      });
-      const live = games.filter(m => {
-        const st = (m.status||m.match_status||'').toLowerCase();
-        return st === 'live' || st === 'in_play' || st === '1h' || st === '2h' || st === 'ht';
-      });
-      const all = [...live, ...done];
+      const games = await loadAllGames();
+      const done = games.filter(m => m.status === 'finished');
       hide('results-loading'); show('results-container');
-      if (!all.length) {
-        document.getElementById('results-container').innerHTML = '<div class="results-empty">No results yet — check back once the tournament kicks off!</div>';
+      if (!done.length) {
+        document.getElementById('results-container').innerHTML = '<div class="results-empty">No results yet — check back once matches kick off!</div>';
         return;
       }
       const goals = done.reduce((s,m)=>s+Number(m.home_score||0)+Number(m.away_score||0),0);
-      const myPlayed = all.filter(m=>{ try{return isMyTeam(m.home_team||'')||isMyTeam(m.away_team||'');}catch(e){return false;} }).length;
+      const myPlayed = done.filter(m=>safeIsMyTeam(m.home_team)||safeIsMyTeam(m.away_team)).length;
       document.getElementById('results-container').innerHTML =
-        summaryBar(done.length, live.length, goals, myPlayed) + renderGrouped(all, true);
+        summaryBar(done.length, 0, goals, myPlayed) + renderGrouped(done, true);
       resultsLoaded = true;
-      if (live.length) setTimeout(()=>{resultsLoaded=false;loadResults();}, 60000);
     } catch(e) {
       hide('results-loading'); show('results-container');
       document.getElementById('results-container').innerHTML = `<div class="info-box red">Could not load results: ${e.message}</div>`;
@@ -819,22 +819,19 @@
   async function loadLive() {
     show('live-loading'); hide('live-container');
     try {
-      const data = await wcFetch('');
-      const games = Array.isArray(data) ? data : (data.data || data.games || data.matches || []);
-      const live = games.filter(m => {
-        const st = (m.status||m.match_status||'').toLowerCase();
-        return st === 'live' || st === 'in_play' || st === '1h' || st === '2h' || st === 'ht';
-      });
+      // openfootball doesn't have live data — show today's matches instead
+      const games = await loadAllGames();
+      const today = new Date().toISOString().slice(0,10);
+      const todayGames = games.filter(m => m.kickoff && m.kickoff.startsWith(today));
       hide('live-loading'); show('live-container');
-      if (!live.length) {
-        document.getElementById('live-container').innerHTML = '<div class="results-empty">No matches live right now. Check the Upcoming tab for next kick-off times ⚽</div>';
+      if (!todayGames.length) {
+        document.getElementById('live-container').innerHTML = '<div class="results-empty">No World Cup matches today. Check the Upcoming tab for next fixtures ⚽</div>';
       } else {
-        document.getElementById('live-container').innerHTML = live.map(renderMatchCard).join('');
-        setTimeout(loadLive, 30000);
+        document.getElementById('live-container').innerHTML = `<p style="font-size:12px;color:var(--muted);margin-bottom:12px">Today's matches — scores update when results are confirmed</p>` + todayGames.map(renderMatchCard).join('');
       }
     } catch(e) {
       hide('live-loading'); show('live-container');
-      document.getElementById('live-container').innerHTML = `<div class="info-box red">Could not load live scores: ${e.message}</div>`;
+      document.getElementById('live-container').innerHTML = `<div class="info-box red">Error: ${e.message}</div>`;
     }
   }
 
