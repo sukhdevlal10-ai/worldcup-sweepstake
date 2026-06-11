@@ -532,22 +532,34 @@
     return TEAMS.some(t => t.name.toLowerCase() === normalized || name === t.name);
   }
 
-  function isMyTeam(name) {
-    if (!currentDraw) return false;
+  function normalizeTeamName(name) {
+    const map = {
+      'Korea Republic': 'South Korea',
+      'Bosnia and Herzegovina': 'Bosnia & Herz.',
+      'Türkiye': 'Türkiye',
+      'Turkey': 'Türkiye',
+      "Côte d'Ivoire": 'Ivory Coast',
+      'Ivory Coast': 'Ivory Coast',
+      'United States': 'USA',
+      'Democratic Republic of Congo': 'DR Congo',
+      'Curacao': 'Curaçao',
+    };
+    return map[name] || name;
+  }
+
+  function getTeamOwner(name) {
+    if (!currentDraw) return null;
+    const normalized = normalizeTeamName(name).toLowerCase();
     for (const p of currentDraw) {
       for (const t of p.teams) {
-        if (t.name.toLowerCase() === name.toLowerCase()) return true;
-        // handle API name variants
-        if (name === 'Korea Republic' && t.name === 'South Korea') return true;
-        if (name === 'Bosnia and Herzegovina' && t.name === 'Bosnia & Herz.') return true;
-        if ((name === 'Türkiye' || name === 'Turkey') && t.name === 'Türkiye') return true;
-        if ((name === "Côte d'Ivoire" || name === 'Ivory Coast') && t.name === 'Ivory Coast') return true;
-        if ((name === 'United States' || name === 'USA') && t.name === 'USA') return true;
-        if (name === 'Democratic Republic of Congo' && t.name === 'DR Congo') return true;
-        if (name === 'Curacao' && t.name === 'Curaçao') return true;
+        if (t.name.toLowerCase() === normalized) return p.name;
       }
     }
-    return false;
+    return null;
+  }
+
+  function isMyTeam(name) {
+    return getTeamOwner(name) !== null;
   }
 
   function formatDate(dateStr) {
@@ -594,9 +606,9 @@
         const isLive = m.status === 'IN_PLAY' || m.status === 'PAUSED' || m.status === 'HALFTIME';
         const isFinished = m.status === 'FINISHED';
         const isSched = m.status === 'TIMED' || m.status === 'SCHEDULED';
-        const homeIsmine = isMyTeam(m.homeTeam.name);
-        const awayIsmine = isMyTeam(m.awayTeam.name);
-        const highlighted = homeIsmine || awayIsmine;
+        const homeOwner = getTeamOwner(m.homeTeam.name);
+        const awayOwner = getTeamOwner(m.awayTeam.name);
+        const highlighted = homeOwner || awayOwner;
         const hFlag = getFlag(m.homeTeam.name);
         const aFlag = getFlag(m.awayTeam.name);
         const hScore = m.score?.fullTime?.home ?? m.score?.halfTime?.home ?? null;
@@ -610,7 +622,7 @@
           <div class="fix-team">
             <span class="fix-flag">${hFlag}</span>
             <span>${m.homeTeam.shortName || m.homeTeam.name}</span>
-            ${homeIsmine?'<span class="fix-badge yours">YOURS</span>':''}
+            ${homeOwner ? `<span class="fix-badge yours">${homeOwner.toUpperCase()}</span>` : ''}
           </div>
           <div class="fix-score-block">
             <div class="fix-score ${isLive?'live':''}">${scoreStr}</div>
@@ -618,7 +630,7 @@
             <div class="fix-badge grp">${roundLabel}</div>
           </div>
           <div class="fix-team right">
-            ${awayIsmine?'<span class="fix-badge yours">YOURS</span>':''}
+            ${awayOwner ? `<span class="fix-badge yours">${awayOwner.toUpperCase()}</span>` : ''}
             <span>${m.awayTeam.shortName || m.awayTeam.name}</span>
             <span class="fix-flag">${aFlag}</span>
           </div>
