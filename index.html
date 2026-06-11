@@ -641,9 +641,10 @@
   }
 
   // ---- FIXTURES ----
-  // Source: openfootball/worldcup.json on GitHub (free, no key, CORS ok)
-  // JSON format: { matches: [{team1,team2,date,time,round,group,ground,score:{ft:[h,a]}}] }
-  const WC_JSON = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
+  // Fixtures from openfootball/worldcup.json (full schedule, free, no key)
+  // Scores merged from FIFA public API via our Cloudflare Worker
+  const WC_JSON   = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
+  const FIFA_API  = 'https://football-proxy.sukhdevlal10.workers.dev/get/games';
   let _wcGames = null;
 
   function safeOwner(n) { try { return getTeamOwner(n)||null; } catch(e) { return null; } }
@@ -651,27 +652,66 @@
 
   async function getGames() {
     if (_wcGames) return _wcGames;
+
+    // Load fixture list from openfootball
     const res = await fetch(WC_JSON);
-    if (!res.ok) throw new Error('Could not reach data source (HTTP '+res.status+')');
+    if (!res.ok) throw new Error('Could not load fixture list (HTTP '+res.status+')');
     const data = await res.json();
-    _wcGames = (data.matches || []).map(m => {
+    const fixtures = (data.matches || []).map(m => {
       const ft = m.score && m.score.ft;
       const played = Array.isArray(ft) && ft.length === 2;
-      // Build a sortable date — strip timezone from time e.g. "13:00 UTC-6" -> "13:00"
-      const timeClean = m.time ? m.time.replace(/\s*UTC.*$/,'').trim() : '12:00';
+      const timeClean = m.time ? m.time.split(' ')[0] : '12:00';
       return {
-        home:    m.team1 || '',
-        away:    m.team2 || '',
-        hGoals:  played ? ft[0] : null,
-        aGoals:  played ? ft[1] : null,
-        played:  played,
-        date:    m.date || '',          // "2026-06-11"
-        time:    timeClean,             // "13:00"
-        round:   m.round || '',
-        group:   m.group || '',
-        venue:   m.ground || '',
+        home:   m.team1 || '',
+        away:   m.team2 || '',
+        hGoals: played ? ft[0] : null,
+        aGoals: played ? ft[1] : null,
+        played: played,
+        date:   m.date || '',
+        time:   timeClean,
+        round:  m.round || '',
+        group:  m.group || '',
+        venue:  m.ground || '',
       };
     });
+
+    // Try to merge live scores from FIFA via Worker
+    try {
+      const liveRes = await fetch(FIFA_API);
+      if (liveRes.ok) {
+        const liveData = await liveRes.json();
+        // worldcup26.ir format: array of games with home_team, away_team, home_score etc
+        const liveGames = Array.isArray(liveData) ? liveData : (liveData.data || liveData.games || liveData.matches || []);
+        liveGames.forEach(lg => {
+          const hName = lg.home_team || lg.team1 || lg.homeTeam || '';
+          const aName = lg.away_team || lg.team2 || lg.awayTeam || '';
+          if (!hName || !aName) return;
+          const hScore = lg.home_score !== undefined ? lg.home_score : lg.homeScore;
+          const aScore = lg.away_score !== undefined ? lg.away_score : lg.awayScore;
+          const st = (lg.status || lg.match_status || '').toLowerCase();
+          const isDone = st === 'finished' || st === 'ft' || st === 'completed' || st === 'full-time';
+          const isLive = st === 'live' || st === '1h' || st === '2h' || st === 'ht' || st === 'in_play';
+          if (!isDone && !isLive) return;
+          // Match to fixture list by team name
+          const fix = fixtures.find(f =>
+            f.home.toLowerCase() === hName.toLowerCase() ||
+            f.home.toLowerCase().includes(hName.toLowerCase()) ||
+            hName.toLowerCase().includes(f.home.toLowerCase())
+          );
+          if (fix && hScore !== null && hScore !== undefined) {
+            fix.hGoals = Number(hScore);
+            fix.aGoals = Number(aScore);
+            fix.played = isDone;
+            fix.live   = isLive;
+          }
+        });
+      }
+    } catch(e) {
+      // Live merge failed — fall back to openfootball scores only
+      console.warn('Live score merge failed:', e.message);
+    }
+
+    _wcGames = fixtures;
     return _wcGames;
   }
 
@@ -680,26 +720,23 @@
     const aFlag  = (typeof getFlag==='function') ? getFlag(m.away) : '';
     const hOwner = safeOwner(m.home);
     const aOwner = safeOwner(m.away);
-    const score  = m.played ? m.hGoals+' – '+m.aGoals : 'vs';
-    // Display time in local browser time
-    let dispTime = m.time;
-    let dispDate = m.date;
-    try {
-      // m.date = "2026-06-11", m.time = "13:00" but we don't know exact tz so show as-is
-      dispDate = new Date(m.date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-    } catch(e){}
-    const label  = m.played ? 'FT' : m.time;
-    const sub    = m.group + (m.venue ? ' · '+m.venue : '');
-    const hl     = hOwner || aOwner;
-    return `<div class="result-card ${hl?'has-my-team':''}">
+    const isDone = m.played && !m.live;
+    const isLive = m.live;
+    const score  = (isDone || isLive) && m.hGoals !== null ? m.hGoals+' – '+m.aGoals : 'vs';
+    let kickoff = '';
+    try { kickoff = new Date(m.date+'T'+m.time+':00').toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); } catch(e) { kickoff = m.time; }
+    const label = isLive ? '🔴 LIVE' : isDone ? 'FT' : kickoff;
+    const sub   = (m.group||'') + (m.venue?' · '+m.venue:'');
+    const hl    = hOwner || aOwner;
+    return `<div class="result-card ${hl?'has-my-team':''} ${isLive?'live-match':''}">
       <div class="rc-team">
         <span class="rc-flag">${hFlag}</span>
         <span class="rc-tname">${m.home}</span>
         ${hOwner?`<span class="rc-owner">${hOwner.toUpperCase()}</span>`:''}
       </div>
       <div class="rc-middle">
-        <div class="rc-score">${score}</div>
-        <div class="rc-label">${label}</div>
+        <div class="rc-score ${isLive?'live':''}">${score}</div>
+        <div class="rc-label ${isLive?'live-lbl':''}">${label}</div>
         <div class="rc-round">${sub}</div>
       </div>
       <div class="rc-team right">
@@ -712,22 +749,16 @@
 
   function groupedHTML(matches, newestFirst) {
     if (!matches.length) return '<div class="results-empty">No matches found.</div>';
-    // Sort by date
-    const sorted = [...matches].sort((a,b) => {
-      const d = a.date.localeCompare(b.date);
-      return newestFirst ? -d : d;
-    });
-    // Group by date
+    const sorted = [...matches].sort((a,b) => newestFirst ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date));
     const days = {};
     sorted.forEach(m => {
-      const key = m.date;
-      if (!days[key]) days[key] = [];
-      days[key].push(m);
+      if (!days[m.date]) days[m.date] = [];
+      days[m.date].push(m);
     });
     let html = '';
     for (const [date, ms] of Object.entries(days)) {
       let label = date;
-      try { label = new Date(date).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); } catch(e){}
+      try { label = new Date(date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); } catch(e){}
       html += `<div class="results-day"><div class="results-day-hd">${label}</div>`;
       ms.forEach(m => { html += matchCard(m); });
       html += '</div>';
@@ -739,7 +770,7 @@
     show('schedule-loading'); hide('schedule-container');
     try {
       const games = await getGames();
-      const upcoming = games.filter(m => !m.played);
+      const upcoming = games.filter(m => !m.played && !m.live);
       hide('schedule-loading'); show('schedule-container');
       document.getElementById('schedule-container').innerHTML = upcoming.length
         ? groupedHTML(upcoming, false)
@@ -754,10 +785,10 @@
     show('results-loading'); hide('results-container');
     try {
       const games = await getGames();
-      const done = games.filter(m => m.played);
+      const done = games.filter(m => m.played && !m.live);
       hide('results-loading'); show('results-container');
       if (!done.length) {
-        document.getElementById('results-container').innerHTML = '<div class="results-empty">No results yet — check back once matches kick off!</div>';
+        document.getElementById('results-container').innerHTML = '<div class="results-empty">No results yet — scores appear here once confirmed after each match.</div>';
         return;
       }
       const goals    = done.reduce((s,m)=>s+Number(m.hGoals||0)+Number(m.aGoals||0), 0);
@@ -778,12 +809,23 @@
     show('live-loading'); hide('live-container');
     try {
       const games = await getGames();
+      const live  = games.filter(m => m.live);
       const today = new Date().toISOString().slice(0,10);
       const todayGames = games.filter(m => m.date === today);
       hide('live-loading'); show('live-container');
-      document.getElementById('live-container').innerHTML = todayGames.length
-        ? `<p style="font-size:12px;color:var(--muted);margin-bottom:12px">Today's matches — results appear once confirmed</p>` + todayGames.map(matchCard).join('')
-        : '<div class="results-empty">No World Cup matches today. Check Upcoming for next fixtures ⚽</div>';
+      if (live.length) {
+        document.getElementById('live-container').innerHTML =
+          `<p style="font-size:12px;color:#5dc866;font-weight:700;margin-bottom:12px">🔴 ${live.length} match${live.length>1?'es':''} in progress</p>` +
+          live.map(matchCard).join('');
+        setTimeout(()=>{ _wcGames=null; loadLive(); }, 30000);
+      } else if (todayGames.length) {
+        document.getElementById('live-container').innerHTML =
+          `<p style="font-size:12px;color:var(--muted);margin-bottom:12px">Today's matches</p>` +
+          todayGames.map(matchCard).join('');
+      } else {
+        document.getElementById('live-container').innerHTML =
+          '<div class="results-empty">No World Cup matches today. Check Upcoming for next fixtures ⚽</div>';
+      }
     } catch(e) {
       hide('live-loading'); show('live-container');
       document.getElementById('live-container').innerHTML = `<div class="info-box red">⚠️ ${e.message}</div>`;
@@ -795,6 +837,7 @@
     btn.classList.add('active');
     ['fix-schedule','fix-results','fix-live'].forEach(id=>hide(id));
     show('fix-'+tab);
+    _wcGames = null; // always refresh on tab switch
     if (tab==='schedule') loadSchedule();
     if (tab==='results')  loadResults();
     if (tab==='live')     loadLive();
