@@ -121,6 +121,44 @@
   .fix-badge.yours{background:rgba(240,192,64,.2);color:var(--gold)}
   .fix-badge.grp{background:rgba(255,255,255,.07);color:var(--muted)}
   .no-fixtures{text-align:center;padding:32px;color:var(--muted);font-size:13px}
+
+  /* PLAYER PROFILE MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:none;align-items:flex-end;justify-content:center}
+  .modal-overlay.open{display:flex}
+  .modal{background:#1a3d24;border:1px solid rgba(255,255,255,.12);border-radius:18px 18px 0 0;width:100%;max-width:680px;max-height:88vh;overflow-y:auto;padding:0 0 32px;animation:slideModal .3s ease}
+  @keyframes slideModal{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .modal-handle{width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:12px auto 0}
+  .modal-hd{padding:20px 20px 0;display:flex;align-items:center;gap:14px;margin-bottom:18px}
+  .modal-avatar{width:52px;height:52px;border-radius:50%;background:var(--gold);color:var(--ink);font-family:'Bebas Neue',sans-serif;font-size:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .modal-name{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.04em;line-height:1}
+  .modal-name span{color:var(--gold)}
+  .modal-close{margin-left:auto;background:rgba(255,255,255,.1);border:none;color:var(--white);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .modal-close:hover{background:rgba(255,255,255,.2)}
+  .modal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 20px;margin-bottom:20px}
+  .modal-stat{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;text-align:center}
+  .modal-stat-num{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--gold);line-height:1}
+  .modal-stat-lbl{font-size:10px;color:var(--muted);letter-spacing:.08em;margin-top:3px}
+  .modal-section-title{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.1em;color:var(--gold);padding:0 20px;margin-bottom:10px}
+  .modal-team-row{display:flex;align-items:center;gap:10px;padding:9px 14px;margin:0 20px 6px;border-radius:8px;font-size:13px}
+  .modal-team-row.alive{background:rgba(80,200,100,.07);border-left:3px solid rgba(80,200,100,.4)}
+  .modal-team-row.out{background:rgba(255,60,60,.05);border-left:3px solid rgba(255,60,60,.2);opacity:.45;text-decoration:line-through}
+  .modal-team-flag{font-size:20px;flex-shrink:0}
+  .modal-team-name{font-weight:600;flex:1}
+  .modal-team-meta{font-size:11px;text-align:right}
+  .modal-team-grp{color:var(--muted);letter-spacing:.08em}
+  .modal-team-status-alive{color:#5dc866;font-weight:700}
+  .modal-team-status-out{color:rgba(255,80,80,.7);font-weight:700}
+  .modal-divider{height:1px;background:rgba(255,255,255,.07);margin:16px 20px}
+  .modal-results{padding:0 20px}
+  .result-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(0,0,0,.25);border-radius:8px;margin-bottom:6px;font-size:12px}
+  .result-teams{flex:1}
+  .result-match{font-weight:600;font-size:13px}
+  .result-round{color:var(--muted);font-size:11px;margin-top:2px}
+  .result-score{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.05em;flex-shrink:0}
+  .result-score.win{color:#5dc866}
+  .result-score.loss{color:rgba(255,80,80,.7)}
+  .result-score.draw{color:var(--gold)}
+  .no-results{font-size:12px;color:var(--muted);padding:8px 0}
 </style>
 </head>
 <body>
@@ -531,7 +569,19 @@
       scored.forEach(({name,alive,aliveTeams},idx) => {
         const initials = name.slice(0,2).toUpperCase();
         const ts = aliveTeams.length ? aliveTeams.map(t=>t.flag+' '+t.name).join(', ') : 'All eliminated';
-        ll.innerHTML += `<div class="lb-row ${idx===0&&alive>0?'lb-1':''}" style="animation-delay:${idx*.05}s"><div class="lb-pos">${idx+1}</div><div class="lb-av">${initials}</div><div class="lb-info"><div class="lb-pname">${name}</div><div class="lb-alive">${ts}</div></div><div style="text-align:right;flex-shrink:0"><div class="lb-score">${alive}</div><div class="lb-score-lbl">ALIVE</div></div></div>`;
+        const playerIdx = drawData.findIndex(p => p.name === name);
+        ll.innerHTML += `<div class="lb-row ${idx===0&&alive>0?'lb-1':''}" style="animation-delay:${idx*.05}s;cursor:pointer" onclick="openPlayerModal(${playerIdx})">
+          <div class="lb-pos">${idx+1}</div>
+          <div class="lb-av">${initials}</div>
+          <div class="lb-info">
+            <div class="lb-pname">${name} <span style="font-size:10px;color:var(--gold);letter-spacing:.06em">&#9656; VIEW</span></div>
+            <div class="lb-alive">${ts}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div class="lb-score">${alive}</div>
+            <div class="lb-score-lbl">ALIVE</div>
+          </div>
+        </div>`;
       });
     }
     lbDrawUnsub = onValue(ref(db,'draw'), s => { drawData=s.exists()?s.val():null; dr=true; render(); });
@@ -737,7 +787,143 @@
     } catch(e) { btn.disabled=false; btn.textContent='SAVE ELIMINATIONS'; alert('Error saving.'); }
   };
 
+
+  // ---- PLAYER PROFILE MODAL ----
+  window.closeModal = function(e) {
+    if (e.target === document.getElementById('playerModal')) {
+      document.getElementById('playerModal').classList.remove('open');
+    }
+  };
+
+  window.openPlayerModal = async function(playerIdx) {
+    if (!currentDraw) return;
+    const player = currentDraw[playerIdx];
+    if (!player) return;
+
+    // Fetch latest elim data
+    await fetchElim();
+
+    // Fetch latest fixtures for this player's teams
+    let matches = [];
+    if (allFixtures.length > 0) {
+      matches = allFixtures.filter(m => {
+        return getTeamOwner(m.homeTeam.name) === player.name || getTeamOwner(m.awayTeam.name) === player.name;
+      });
+    }
+
+    const initials = player.name.slice(0,2).toUpperCase();
+    const aliveTeams = player.teams.filter(t => !eliminatedTeams.has(t.name));
+    const elimTeams = player.teams.filter(t => eliminatedTeams.has(t.name));
+    const totalPlayed = matches.filter(m => m.status === 'FINISHED').length;
+    const wins = matches.filter(m => {
+      if (m.status !== 'FINISHED') return false;
+      const h = m.score?.fullTime?.home, a = m.score?.fullTime?.away;
+      const isHome = getTeamOwner(m.homeTeam.name) === player.name;
+      return isHome ? h > a : a > h;
+    }).length;
+
+    // Header
+    document.getElementById('modalAvatar').textContent = initials;
+    document.getElementById('modalName').innerHTML = player.name;
+    document.getElementById('modalSub').textContent = aliveTeams.length + ' teams still in · ' + elimTeams.length + ' eliminated';
+
+    // Stats
+    document.getElementById('modalStats').innerHTML = `
+      <div class="modal-stat"><div class="modal-stat-num">${aliveTeams.length}</div><div class="modal-stat-lbl">TEAMS ALIVE</div></div>
+      <div class="modal-stat"><div class="modal-stat-num">${totalPlayed}</div><div class="modal-stat-lbl">MATCHES PLAYED</div></div>
+      <div class="modal-stat"><div class="modal-stat-num">${wins}</div><div class="modal-stat-lbl">WINS</div></div>
+    `;
+
+    // Teams list — alive first, then eliminated
+    const sortedTeams = [...aliveTeams, ...elimTeams];
+    document.getElementById('modalTeams').innerHTML = sortedTeams.map(t => {
+      const out = eliminatedTeams.has(t.name);
+      return `<div class="modal-team-row ${out?'out':'alive'}">
+        <span class="modal-team-flag">${t.flag}</span>
+        <span class="modal-team-name">${t.name}</span>
+        <div class="modal-team-meta">
+          <div class="modal-team-grp">GROUP ${t.group}</div>
+          <div class="${out?'modal-team-status-out':'modal-team-status-alive'}">${out?'ELIMINATED':'STILL IN'}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Match results
+    const finished = matches.filter(m => m.status === 'FINISHED' || m.status === 'IN_PLAY' || m.status === 'PAUSED' || m.status === 'HALFTIME');
+    const upcoming = matches.filter(m => m.status === 'TIMED' || m.status === 'SCHEDULED');
+
+    let resultsHTML = '';
+
+    if (finished.length > 0) {
+      resultsHTML += '<p style="font-size:11px;color:var(--muted);letter-spacing:.08em;margin-bottom:8px">PLAYED</p>';
+      finished.forEach(m => {
+        const h = m.score?.fullTime?.home ?? m.score?.halfTime?.home ?? 0;
+        const a = m.score?.fullTime?.away ?? m.score?.halfTime?.away ?? 0;
+        const isHome = getTeamOwner(m.homeTeam.name) === player.name;
+        const myScore = isHome ? h : a;
+        const oppScore = isHome ? a : h;
+        const isLive = m.status === 'IN_PLAY' || m.status === 'PAUSED' || m.status === 'HALFTIME';
+        let resultClass = 'draw';
+        if (!isLive) { if (myScore > oppScore) resultClass = 'win'; else if (myScore < oppScore) resultClass = 'loss'; }
+        const hFlag = getFlag(m.homeTeam.name);
+        const aFlag = getFlag(m.awayTeam.name);
+        const roundLabel = m.stage === 'GROUP_STAGE' ? 'Group ' + (m.group?.replace('GROUP_','') || '') : (m.stage||'').replace(/_/g,' ');
+        resultsHTML += `<div class="result-row">
+          <div class="result-teams">
+            <div class="result-match">${hFlag} ${m.homeTeam.shortName || m.homeTeam.name} vs ${aFlag} ${m.awayTeam.shortName || m.awayTeam.name}</div>
+            <div class="result-round">${roundLabel} · ${formatDate(m.utcDate)}</div>
+          </div>
+          <div class="result-score ${isLive?'draw':resultClass}">${h} – ${a}${isLive?' ●':''}</div>
+        </div>`;
+      });
+    }
+
+    if (upcoming.length > 0) {
+      resultsHTML += '<p style="font-size:11px;color:var(--muted);letter-spacing:.08em;margin:12px 0 8px">UPCOMING</p>';
+      upcoming.slice(0, 6).forEach(m => {
+        const hFlag = getFlag(m.homeTeam.name);
+        const aFlag = getFlag(m.awayTeam.name);
+        const roundLabel = m.stage === 'GROUP_STAGE' ? 'Group ' + (m.group?.replace('GROUP_','') || '') : (m.stage||'').replace(/_/g,' ');
+        resultsHTML += `<div class="result-row">
+          <div class="result-teams">
+            <div class="result-match">${hFlag} ${m.homeTeam.shortName || m.homeTeam.name} vs ${aFlag} ${m.awayTeam.shortName || m.awayTeam.name}</div>
+            <div class="result-round">${roundLabel} · ${formatDate(m.utcDate)}</div>
+          </div>
+          <div class="result-score" style="font-size:13px;color:var(--muted)">${formatTime(m.utcDate)}</div>
+        </div>`;
+      });
+    }
+
+    if (!resultsHTML) resultsHTML = '<p class="no-results">No match data available yet — check back once the tournament starts.</p>';
+    document.getElementById('modalResults').innerHTML = resultsHTML;
+
+    // Open modal
+    document.getElementById('playerModal').classList.add('open');
+  };
+
   initSetup();
 </script>
+
+<!-- PLAYER PROFILE MODAL -->
+<div class="modal-overlay" id="playerModal" onclick="closeModal(event)">
+  <div class="modal" id="modalInner">
+    <div class="modal-handle"></div>
+    <div class="modal-hd">
+      <div class="modal-avatar" id="modalAvatar"></div>
+      <div>
+        <div class="modal-name" id="modalName"></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px" id="modalSub"></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('playerModal').classList.remove('open')">&#10005;</button>
+    </div>
+    <div class="modal-stats" id="modalStats"></div>
+    <div class="modal-section-title">ALL 6 TEAMS</div>
+    <div id="modalTeams"></div>
+    <div class="modal-divider"></div>
+    <div class="modal-section-title">MATCH RESULTS</div>
+    <div class="modal-results" id="modalResults"></div>
+  </div>
+</div>
+
 </body>
 </html>
