@@ -356,16 +356,19 @@
   async function initSetup() {
     document.getElementById('setup-loading').style.display = 'block';
     document.getElementById('setup-content').style.display = 'none';
-    await fetchDraw();
+    try {
+      await fetchDraw();
+    } catch(e) {}
     const notice = document.getElementById('draw-exists-notice');
-    const resetBtn = document.getElementById('resetBtn');
     if (currentDraw) {
-      notice.style.display = 'block'; resetBtn.style.display = 'block';
+      notice.style.display = 'block';
+      document.getElementById('resetSection').style.display = 'block';
       currentDraw.forEach((p,i) => { const el = document.getElementById('p'+i); if(el) el.value = p.name; });
-      document.getElementById('drawBtn').textContent = '🎲 REDRAW TEAMS';
+      document.getElementById('drawBtn').textContent = '&#127922; REDRAW TEAMS';
     } else {
-      notice.style.display = 'none'; document.getElementById('resetSection').style.display = 'none';
-      document.getElementById('drawBtn').textContent = '🎲 DRAW TEAMS';
+      notice.style.display = 'none';
+      document.getElementById('resetSection').style.display = 'none';
+      document.getElementById('drawBtn').textContent = '&#127922; DRAW TEAMS';
     }
     document.getElementById('setup-loading').style.display = 'none';
     document.getElementById('setup-content').style.display = 'block';
