@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>World Cup Sweepstake 2026</title>
+<script type="module" crossorigin src="https://widgets.api-sports.io/3.1.0/widgets.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
@@ -121,6 +122,15 @@
   .fix-badge{font-size:9px;font-weight:700;letter-spacing:.08em;padding:2px 6px;border-radius:3px;margin-top:3px}
   .fix-badge.yours{background:rgba(240,192,64,.2);color:var(--gold)}
   .fix-badge.grp{background:rgba(255,255,255,.07);color:var(--muted)}
+  /* FIX TABS */
+  .fix-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .fix-tab{padding:8px 18px;background:rgba(0,0,0,.3);border:1px solid var(--card-border);border-radius:20px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.08em;cursor:pointer;transition:all .15s;text-transform:uppercase}
+  .fix-tab.active,.fix-tab:hover{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+  .fix-widget-wrap{background:rgba(0,0,0,.25);border:1px solid var(--card-border);border-radius:12px;overflow:hidden;min-height:400px}
+  .fix-widget-wrap api-sports-widget{--primary-color:#f0c040;--secondary-color:#ffffff;height:70vh;display:block}
+  /* hide api-sports branding bar if present */
+  .fix-widget-wrap .widget-footer{display:none!important}
+
   .no-fixtures{text-align:center;padding:32px;color:var(--muted);font-size:13px}
 
   /* PLAYER PROFILE MODAL */
@@ -256,15 +266,43 @@
 <!-- FIXTURES -->
 <div class="page" id="page-fixtures">
   <p class="page-title">LIVE <span>FIXTURES</span></p>
-  <p class="page-sub"><span class="live-dot"></span>Real-time scores · Your teams highlighted in gold</p>
-  <div class="fixtures-filter" id="fixtureFilter">
-    <button class="filter-btn active" onclick="filterFixtures('all',this)">All Matches</button>
-    <button class="filter-btn" onclick="filterFixtures('live',this)">🔴 Live Now</button>
-    <button class="filter-btn" onclick="filterFixtures('today',this)">Today</button>
-    <button class="filter-btn" onclick="filterFixtures('mine',this)">My Teams</button>
+  <p class="page-sub"><span class="live-dot"></span>Real-time scores · Auto-updates every 15 seconds</p>
+
+  <div class="fix-tabs" id="fixTabs">
+    <button class="fix-tab active" onclick="switchFixTab('schedule',this)">📅 Schedule</button>
+    <button class="fix-tab" onclick="switchFixTab('standings',this)">📊 Standings</button>
   </div>
-  <div id="fixtures-loading" class="loading"><span class="spinner"></span>Loading fixtures...</div>
-  <div id="fixtures-content" style="display:none"></div>
+
+  <!-- Schedule widget -->
+  <div id="fix-schedule" class="fix-widget-wrap">
+    <api-sports-widget data-type="league"></api-sports-widget>
+  </div>
+
+  <!-- Standings widget -->
+  <div id="fix-standings" class="fix-widget-wrap" style="display:none">
+    <api-sports-widget data-type="standings"></api-sports-widget>
+  </div>
+
+  <!-- API Sports global config widget for WC 2026 -->
+  <api-sports-widget
+    data-type="config"
+    data-key="8db9f6c182b2c2cca64a"
+    data-sport="football"
+    data-lang="en"
+    data-theme="dark"
+    data-show-errors="false"
+    data-show-logos="true"
+    data-refresh="15"
+    data-game-tab="events"
+    data-standings="true"
+    data-target-standings="true"
+    data-target-game="#fix-schedule api-sports-widget"
+    data-target-player="modal"
+    data-target-team="modal"
+    data-tab="today"
+    data-league="1"
+    data-season="2026"
+  ></api-sports-widget>
 </div>
 
 <!-- ELIMINATIONS -->
@@ -590,163 +628,19 @@
   }
 
   // ---- FIXTURES ----
-  function getFlag(name) { if (!name) return '🏳️'; return FLAG_MAP[name] || '🏳️'; }
-
-  function teamInDraw(name) {
-    if (!currentDraw) return false;
-    const normalized = name.toLowerCase();
-    return TEAMS.some(t => t.name.toLowerCase() === normalized || name === t.name);
-  }
-
-  function normalizeTeamName(name) {
-    if (!name) return '';
-    const map = {
-      'Korea Republic': 'South Korea',
-      'Bosnia and Herzegovina': 'Bosnia & Herz.',
-      'Türkiye': 'Türkiye',
-      'Turkey': 'Türkiye',
-      "Côte d'Ivoire": 'Ivory Coast',
-      'Ivory Coast': 'Ivory Coast',
-      'United States': 'USA',
-      'Democratic Republic of Congo': 'DR Congo',
-      'Curacao': 'Curaçao',
-    };
-    return map[name] || name;
-  }
-
-  function getTeamOwner(name) {
-    if (!currentDraw || !name) return null;
-    const normalized = normalizeTeamName(name).toLowerCase();
-    for (const p of currentDraw) {
-      for (const t of p.teams) {
-        if (t.name.toLowerCase() === normalized) return p.name;
-      }
-    }
-    return null;
-  }
-
-  function isMyTeam(name) {
-    if (!name) return false;
-    return getTeamOwner(name) !== null;
-  }
-
-  function formatDate(dateStr) {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'});
-  }
-
-  function formatTime(dateStr) {
-    const d = new Date(dateStr);
-    return d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
-  }
-
-  function isToday(dateStr) {
-    const d = new Date(dateStr), now = new Date();
-    return d.getDate()===now.getDate() && d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
-  }
-
-  function renderFixtures() {
-    const container = document.getElementById('fixtures-content');
-    const myTeams = new Set(currentDraw ? currentDraw.flatMap(p=>p.teams.map(t=>t.name)) : []);
-
-    let filtered = allFixtures;
-    if (fixtureFilter === 'live') filtered = allFixtures.filter(m => m.homeTeam?.name && m.awayTeam?.name && (m.status === 'IN_PLAY' || m.status === 'PAUSED' || m.status === 'HALFTIME'));
-    else if (fixtureFilter === 'today') filtered = allFixtures.filter(m => m.homeTeam?.name && m.awayTeam?.name && isToday(m.utcDate));
-    else if (fixtureFilter === 'mine') filtered = allFixtures.filter(m => m.homeTeam?.name && m.awayTeam?.name && (isMyTeam(m.homeTeam.name) || isMyTeam(m.awayTeam.name)));
-
-    if (filtered.length === 0) {
-      container.innerHTML = `<div class="no-fixtures">${fixtureFilter==='live'?'No matches live right now.':fixtureFilter==='today'?'No matches today.':fixtureFilter==='mine'?'No draw yet or no matches found for your teams.':'No fixtures found.'}</div>`;
-      return;
-    }
-
-    // Group by date
-    const byDate = {};
-    // Filter out matches where teams aren't decided yet (knockout placeholders)
-    filtered = filtered.filter(m => m.homeTeam?.name && m.awayTeam?.name);
-    filtered.forEach(m => {
-      const day = formatDate(m.utcDate);
-      if (!byDate[day]) byDate[day] = [];
-      byDate[day].push(m);
-    });
-
-    let html = '';
-    for (const [day, matches] of Object.entries(byDate)) {
-      html += `<div class="fixture-day"><div class="fixture-day-hd">${day}</div>`;
-      matches.forEach(m => {
-        const isLive = m.status === 'IN_PLAY' || m.status === 'PAUSED' || m.status === 'HALFTIME';
-        const isFinished = m.status === 'FINISHED';
-        const isSched = m.status === 'TIMED' || m.status === 'SCHEDULED';
-        const homeOwner = getTeamOwner(m.homeTeam.name);
-        const awayOwner = getTeamOwner(m.awayTeam.name);
-        const highlighted = homeOwner || awayOwner;
-        const hFlag = getFlag(m.homeTeam.name);
-        const aFlag = getFlag(m.awayTeam.name);
-        const hScore = m.score?.fullTime?.home ?? m.score?.halfTime?.home ?? null;
-        const aScore = m.score?.fullTime?.away ?? m.score?.halfTime?.away ?? null;
-        const scoreStr = (isLive || isFinished) && hScore !== null ? `${hScore} – ${aScore}` : 'vs';
-        const minute = isLive && m.minute ? `${m.minute}'` : null;
-        const timeLabel = isLive ? (minute || (m.status==='HALFTIME'?'HT':'LIVE')) : isFinished ? 'FT' : formatTime(m.utcDate);
-        const roundLabel = m.stage === 'GROUP_STAGE' ? `Group ${m.group?.replace('GROUP_','') || ''}` : (m.stage||'').replace(/_/g,' ');
-
-        html += `<div class="fixture ${isLive?'live-now':''} ${highlighted?'my-team':''}">
-          <div class="fix-team">
-            <span class="fix-flag">${hFlag}</span>
-            <span>${m.homeTeam.shortName || m.homeTeam.name}</span>
-            ${homeOwner ? `<span class="fix-badge yours">${homeOwner.toUpperCase()}</span>` : ''}
-          </div>
-          <div class="fix-score-block">
-            <div class="fix-score ${isLive?'live':''}">${scoreStr}</div>
-            <div class="fix-time ${isLive?'live-label':''}">${timeLabel}</div>
-            <div class="fix-badge grp">${roundLabel}</div>
-          </div>
-          <div class="fix-team right">
-            ${awayOwner ? `<span class="fix-badge yours">${awayOwner.toUpperCase()}</span>` : ''}
-            <span>${m.awayTeam.shortName || m.awayTeam.name}</span>
-            <span class="fix-flag">${aFlag}</span>
-          </div>
-        </div>`;
-      });
-      html += '</div>';
-    }
-    container.innerHTML = html;
-  }
-
-  async function fetchFixtures() {
-    try {
-      const PROXY = 'https://corsproxy.io/?url='; const res = await fetch(PROXY + encodeURIComponent(`https://api.football-data.org/v4/competitions/${WC2026_ID}/matches`), {
-        headers: { 'X-Auth-Token': FD_KEY }
-      });
-      if (!res.ok) throw new Error('API error ' + res.status);
-      const data = await res.json();
-      allFixtures = data.matches || [];
-      document.getElementById('fixtures-loading').style.display = 'none';
-      document.getElementById('fixtures-content').style.display = 'block';
-      renderFixtures();
-    } catch(e) {
-      document.getElementById('fixtures-loading').style.display = 'none';
-      document.getElementById('fixtures-content').style.display = 'block';
-      document.getElementById('fixtures-content').innerHTML = `<div class="info-box red">⚠️ Could not load fixtures. The football-data.org free tier only allows requests from the same browser — if you see this, try refreshing. Error: ${e.message}</div>`;
-    }
-  }
-
-  async function initFixtures() {
-    document.getElementById('fixtures-loading').style.display = 'block';
-    document.getElementById('fixtures-content').style.display = 'none';
-    await fetchDraw();
-    await fetchFixtures();
-    // Refresh live scores every 60 seconds
-    if (fixturesInterval) clearInterval(fixturesInterval);
-    fixturesInterval = setInterval(fetchFixtures, 60000);
-  }
-
-  window.filterFixtures = function(type, btn) {
-    fixtureFilter = type;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  // ---- FIXTURES tab switcher ----
+  window.switchFixTab = function(tab, btn) {
+    document.querySelectorAll('.fix-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    renderFixtures();
+    document.getElementById('fix-schedule').style.display = tab === 'schedule' ? 'block' : 'none';
+    document.getElementById('fix-standings').style.display = tab === 'standings' ? 'block' : 'none';
   };
 
-  // ---- ELIMINATIONS ----
+  function initFixtures() {
+    // Widgets load automatically via the config widget — nothing to do here
+  }
+
+    // ---- ELIMINATIONS ----
   async function initEliminations() {
     document.getElementById('elim-loading').style.display = 'block';
     document.getElementById('elim-content').style.display = 'none';
