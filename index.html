@@ -164,6 +164,7 @@
     <div class="card">
       <div class="card-title">👥 PLAYER NAMES</div>
       <div class="players-grid" id="playersGrid"></div>
+    <p id="namesLockedMsg" style="display:none;font-size:11px;color:rgba(255,255,255,.4);margin-top:8px;text-align:center">&#128274; Names are locked — the draw has already been run</p>
     </div>
     <div id="drawGate" style="display:none;background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.25);border-radius:10px;padding:16px;margin-bottom:12px">
       <p style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:10px">&#128274; A draw already exists. Enter the admin password to redraw:</p>
@@ -371,12 +372,26 @@
     if (currentDraw) {
       notice.style.display = 'block';
       document.getElementById('resetSection').style.display = 'block';
-      currentDraw.forEach((p,i) => { const el = document.getElementById('p'+i); if(el) el.value = p.name; });
+      currentDraw.forEach((p,i) => {
+        const el = document.getElementById('p'+i);
+        if (el) {
+          el.value = p.name;
+          el.disabled = true;
+          el.style.opacity = '0.5';
+          el.style.cursor = 'not-allowed';
+        }
+      });
       document.getElementById('drawBtn').textContent = '&#127922; REDRAW TEAMS (ADMIN ONLY)';
+      document.getElementById('namesLockedMsg').style.display = 'block';
     } else {
       notice.style.display = 'none';
       document.getElementById('resetSection').style.display = 'none';
+      for (let i=0;i<8;i++) {
+        const el = document.getElementById('p'+i);
+        if (el) { el.disabled = false; el.style.opacity = '1'; el.style.cursor = 'text'; }
+      }
       document.getElementById('drawBtn').textContent = '&#127922; DRAW TEAMS';
+      document.getElementById('namesLockedMsg').style.display = 'none';
     }
     document.getElementById('setup-loading').style.display = 'none';
     document.getElementById('setup-content').style.display = 'block';
