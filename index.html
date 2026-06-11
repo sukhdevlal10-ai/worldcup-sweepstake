@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>World Cup Sweepstake 2026</title>
+<!-- Firebase compat (works with regular scripts, no module needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap');
@@ -654,8 +657,7 @@
 
 <!-- RULES -->
 <div class="page active" id="page-rules">
-  <div style="padding-top:8px">
-    <div class="page-hero"><h1>WORLD <span>CUP</span><br>SWEEP<span>STAKE</span></p>
+  <h1 class="page-title">WORLD <span>CUP</span> SWEEPSTAKE <span>2026</span></h1>
     <p class="page-sub">⚽ FIFA 2026 · USA / CANADA / MEXICO · JUNE 11 – JULY 19</p>
     <div class="pot">
       <div><div class="pot-lbl">TOTAL PRIZE POT</div><div class="pot-amt">£96</div></div>
@@ -776,10 +778,8 @@
 <footer>🏆 World Cup 2026 &nbsp;·&nbsp; USA / Canada / Mexico &nbsp;·&nbsp; Good luck everyone</footer>
 
 <!-- Firebase -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
+<script>
+  // Firebase compat SDK (loaded via CDN script tags above)
   const firebaseConfig = {
     apiKey: "AIzaSyBLEvB_F0BhNfoqi6daTknFUvOnplbEjDg",
     authDomain: "world-cup-sweep-steak.firebaseapp.com",
@@ -790,8 +790,17 @@
     appId: "1:456742439314:web:0802c5c720b6c8a690194b"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // Compat SDK helpers to match modular API usage
+  function ref(db, path) { return db.ref(path); }
+  function set(refObj, value) { return refObj.set(value); }
+  function get(refObj) { return refObj.once('value').then(s => ({ exists: () => s.exists(), val: () => s.val() })); }
+  function onValue(refObj, callback) {
+    refObj.on('value', snapshot => callback({ exists: () => snapshot.exists(), val: () => snapshot.val() }));
+    return () => refObj.off('value');
+  }
 
   const FD_KEY = '3303258f3f864d27922e270bfa70c56f';
   const WC2026_ID = 2000; // football-data.org competition ID for WC 2026
