@@ -165,8 +165,21 @@
       <div class="card-title">👥 PLAYER NAMES</div>
       <div class="players-grid" id="playersGrid"></div>
     </div>
-    <button class="draw-btn" id="drawBtn" onclick="runDraw()">🎲 DRAW TEAMS</button>
-    <button class="reset-btn" id="resetBtn" style="display:none" onclick="confirmReset()">✕ CLEAR DRAW &amp; START OVER</button>
+    <button class="draw-btn" id="drawBtn" onclick="runDraw()">&#127922; DRAW TEAMS</button>
+    <div id="resetSection" style="display:none;margin-top:14px">
+      <div id="resetLocked" style="text-align:center">
+        <button class="reset-btn" onclick="showResetUnlock()">&#128274; RESET DRAW (ADMIN ONLY)</button>
+      </div>
+      <div id="resetUnlock" style="display:none;background:rgba(255,80,80,.08);border:1px solid rgba(255,80,80,.25);border-radius:10px;padding:16px;margin-top:8px">
+        <p style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:10px">Enter admin password to reset the draw for everyone:</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="password" id="resetPassword" placeholder="Admin password" style="flex:1;min-width:160px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;font-family:Inter,sans-serif"/>
+          <button onclick="confirmReset()" style="padding:10px 18px;background:rgba(255,80,80,.7);color:#fff;font-family:Bebas Neue,sans-serif;font-size:16px;letter-spacing:.08em;border:none;border-radius:8px;cursor:pointer">CONFIRM</button>
+          <button onclick="hideResetUnlock()" style="padding:10px 14px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);font-family:Bebas Neue,sans-serif;font-size:16px;border:none;border-radius:8px;cursor:pointer">CANCEL</button>
+        </div>
+        <p id="resetError" style="font-size:11px;color:rgba(255,80,80,.8);margin-top:8px;display:none">Incorrect password. Only the admin can reset the draw.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -351,7 +364,7 @@
       currentDraw.forEach((p,i) => { const el = document.getElementById('p'+i); if(el) el.value = p.name; });
       document.getElementById('drawBtn').textContent = '🎲 REDRAW TEAMS';
     } else {
-      notice.style.display = 'none'; resetBtn.style.display = 'none';
+      notice.style.display = 'none'; document.getElementById('resetSection').style.display = 'none';
       document.getElementById('drawBtn').textContent = '🎲 DRAW TEAMS';
     }
     document.getElementById('setup-loading').style.display = 'none';
@@ -369,7 +382,7 @@
       currentDraw = draw;
       btn.textContent = '✅ DRAW SAVED!';
       document.getElementById('draw-exists-notice').style.display = 'block';
-      document.getElementById('resetBtn').style.display = 'block';
+      document.getElementById('resetSection').style.display = 'block';
       setTimeout(() => {
         btn.disabled = false; btn.textContent = '🎲 REDRAW TEAMS';
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -381,15 +394,38 @@
     } catch(e) { btn.disabled = false; btn.textContent = '🎲 DRAW TEAMS'; alert('Could not save. Check connection.'); }
   };
 
+  const ADMIN_PASSWORD = 'Worldcupz2026!';
+
+  window.showResetUnlock = function() {
+    document.getElementById('resetUnlock').style.display = 'block';
+    document.getElementById('resetPassword').value = '';
+    document.getElementById('resetError').style.display = 'none';
+    document.getElementById('resetPassword').focus();
+  };
+
+  window.hideResetUnlock = function() {
+    document.getElementById('resetUnlock').style.display = 'none';
+    document.getElementById('resetPassword').value = '';
+    document.getElementById('resetError').style.display = 'none';
+  };
+
   window.confirmReset = async function() {
-    if (!confirm('Clear the draw for EVERYONE? This cannot be undone.')) return;
+    const pwd = document.getElementById('resetPassword').value;
+    if (pwd !== ADMIN_PASSWORD) {
+      document.getElementById('resetError').style.display = 'block';
+      document.getElementById('resetPassword').value = '';
+      return;
+    }
+    if (!confirm('Reset the draw for EVERYONE? This cannot be undone.')) return;
     try {
       await set(ref(db,'draw'), null); await set(ref(db,'eliminations'), null);
       currentDraw = null; eliminatedTeams = new Set();
       document.getElementById('draw-exists-notice').style.display = 'none';
-      document.getElementById('resetBtn').style.display = 'none';
+      document.getElementById('resetSection').style.display = 'none';
+      document.getElementById('resetUnlock').style.display = 'none';
       for (let i=0;i<8;i++) { const el=document.getElementById('p'+i); if(el) el.value=''; }
-      document.getElementById('drawBtn').textContent = '🎲 DRAW TEAMS';
+      document.getElementById('drawBtn').textContent = '&#127922; DRAW TEAMS';
+      alert('Draw cleared. You can now run a fresh draw.');
     } catch(e) { alert('Error clearing draw.'); }
   };
 
