@@ -589,7 +589,7 @@
   }
 
   // ---- FIXTURES ----
-  function getFlag(name) { return FLAG_MAP[name] || '🏳️'; }
+  function getFlag(name) { if (!name) return '🏳️'; return FLAG_MAP[name] || '🏳️'; }
 
   function teamInDraw(name) {
     if (!currentDraw) return false;
@@ -598,6 +598,7 @@
   }
 
   function normalizeTeamName(name) {
+    if (!name) return '';
     const map = {
       'Korea Republic': 'South Korea',
       'Bosnia and Herzegovina': 'Bosnia & Herz.',
@@ -613,7 +614,7 @@
   }
 
   function getTeamOwner(name) {
-    if (!currentDraw) return null;
+    if (!currentDraw || !name) return null;
     const normalized = normalizeTeamName(name).toLowerCase();
     for (const p of currentDraw) {
       for (const t of p.teams) {
@@ -624,6 +625,7 @@
   }
 
   function isMyTeam(name) {
+    if (!name) return false;
     return getTeamOwner(name) !== null;
   }
 
@@ -647,9 +649,9 @@
     const myTeams = new Set(currentDraw ? currentDraw.flatMap(p=>p.teams.map(t=>t.name)) : []);
 
     let filtered = allFixtures;
-    if (fixtureFilter === 'live') filtered = allFixtures.filter(m => m.status === 'IN_PLAY' || m.status === 'PAUSED' || m.status === 'HALFTIME');
-    else if (fixtureFilter === 'today') filtered = allFixtures.filter(m => isToday(m.utcDate));
-    else if (fixtureFilter === 'mine') filtered = allFixtures.filter(m => isMyTeam(m.homeTeam.name) || isMyTeam(m.awayTeam.name));
+    if (fixtureFilter === 'live') filtered = allFixtures.filter(m => m.homeTeam?.name && m.awayTeam?.name && (m.status === 'IN_PLAY' || m.status === 'PAUSED' || m.status === 'HALFTIME'));
+    else if (fixtureFilter === 'today') filtered = allFixtures.filter(m => m.homeTeam?.name && m.awayTeam?.name && isToday(m.utcDate));
+    else if (fixtureFilter === 'mine') filtered = allFixtures.filter(m => m.homeTeam?.name && m.awayTeam?.name && (isMyTeam(m.homeTeam.name) || isMyTeam(m.awayTeam.name)));
 
     if (filtered.length === 0) {
       container.innerHTML = `<div class="no-fixtures">${fixtureFilter==='live'?'No matches live right now.':fixtureFilter==='today'?'No matches today.':fixtureFilter==='mine'?'No draw yet or no matches found for your teams.':'No fixtures found.'}</div>`;
@@ -658,6 +660,8 @@
 
     // Group by date
     const byDate = {};
+    // Filter out matches where teams aren't decided yet (knockout placeholders)
+    filtered = filtered.filter(m => m.homeTeam?.name && m.awayTeam?.name);
     filtered.forEach(m => {
       const day = formatDate(m.utcDate);
       if (!byDate[day]) byDate[day] = [];
