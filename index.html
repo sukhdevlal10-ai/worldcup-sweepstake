@@ -642,16 +642,42 @@
 
   // ---- FIXTURES ----
   // ---- FIXTURES ----
-  // Uses worldcup26.ir — free, no API key, WC2026 only
-  // Proxied via our Cloudflare Worker to handle CORS
-  const WC_PROXY = 'https://football-proxy.sukhdevlal10.workers.dev';
+  // Uses openfootball/worldcup.json — free, no API key, served via GitHub with CORS
+  // Raw JSON updated after each match
+  const WC_JSON = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
   let scheduleLoaded = false;
   let resultsLoaded  = false;
+  let allGames = [];
 
   async function wcFetch(path) {
-    const res = await fetch(WC_PROXY + path);
+    // path is ignored — we fetch the single JSON file and filter locally
+    if (allGames.length) return allGames;
+    const res = await fetch(WC_JSON);
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    return await res.json();
+    const data = await res.json();
+    // openfootball format: { rounds: [ { name, matches: [ {date, team1, team2, score:{ft:[h,a]}} ] } ] }
+    const rounds = data.rounds || data.matchdays || [];
+    const games = [];
+    rounds.forEach(r => {
+      (r.matches || r.games || []).forEach(m => {
+        const ft = m.score?.ft || m.score?.fulltime || null;
+        const isDone = ft && ft.length === 2;
+        const isLive = m.score && !isDone && m.score.et == null;
+        games.push({
+          home_team:  m.team1?.name || m.team1 || '',
+          away_team:  m.team2?.name || m.team2 || '',
+          home_score: isDone ? ft[0] : null,
+          away_score: isDone ? ft[1] : null,
+          status:     isDone ? 'finished' : 'scheduled',
+          kickoff_utc: m.date + (m.time ? 'T' + m.time : 'T12:00:00'),
+          round:      r.name || '',
+          stadium:    m.stadium?.name || m.stadium || '',
+          group:      r.group || r.name || '',
+        });
+      });
+    });
+    allGames = games;
+    return games;
   }
 
   function renderMatchCard(m) {
@@ -661,8 +687,8 @@
     if (!hName || !aName) return '';
     const hFlag  = getFlag(hName);
     const aFlag  = getFlag(aName);
-    const hOwner = getTeamOwner(hName);
-    const aOwner = getTeamOwner(aName);
+    const hOwner = (typeof getTeamOwner === 'function' && hName) ? getTeamOwner(hName) : null;
+    const aOwner = (typeof getTeamOwner === 'function' && aName) ? getTeamOwner(aName) : null;
     const status = (m.status || m.match_status || 'scheduled').toLowerCase();
     const isLive = status === 'live' || status === 'in_play' || status === '1h' || status === '2h' || status === 'ht';
     const isDone = status === 'finished' || status === 'ft' || status === 'completed';
@@ -741,7 +767,7 @@
     if (scheduleLoaded) return;
     show('schedule-loading'); hide('schedule-container');
     try {
-      const data = await wcFetch('/get/games');
+      const data = await wcFetch('');
       const games = Array.isArray(data) ? data : (data.data || data.games || data.matches || []);
       const upcoming = games.filter(m => {
         const st = (m.status||m.match_status||'').toLowerCase();
@@ -762,7 +788,7 @@
     if (resultsLoaded) return;
     show('results-loading'); hide('results-container');
     try {
-      const data = await wcFetch('/get/games');
+      const data = await wcFetch('');
       const games = Array.isArray(data) ? data : (data.data || data.games || data.matches || []);
       const done = games.filter(m => {
         const st = (m.status||m.match_status||'').toLowerCase();
@@ -779,7 +805,7 @@
         return;
       }
       const goals = done.reduce((s,m)=>s+Number(m.home_score||0)+Number(m.away_score||0),0);
-      const myPlayed = all.filter(m=>isMyTeam(m.home_team||m.homeTeam||'')||isMyTeam(m.away_team||m.awayTeam||'')).length;
+      const myPlayed = all.filter(m=>{ try{return isMyTeam(m.home_team||'')||isMyTeam(m.away_team||'');}catch(e){return false;} }).length;
       document.getElementById('results-container').innerHTML =
         summaryBar(done.length, live.length, goals, myPlayed) + renderGrouped(all, true);
       resultsLoaded = true;
@@ -793,7 +819,7 @@
   async function loadLive() {
     show('live-loading'); hide('live-container');
     try {
-      const data = await wcFetch('/get/games');
+      const data = await wcFetch('');
       const games = Array.isArray(data) ? data : (data.data || data.games || data.matches || []);
       const live = games.filter(m => {
         const st = (m.status||m.match_status||'').toLowerCase();
@@ -828,6 +854,7 @@
   function initFixtures() {
     scheduleLoaded = false;
     resultsLoaded  = false;
+    allGames = [];
     loadSchedule();
   }
 
