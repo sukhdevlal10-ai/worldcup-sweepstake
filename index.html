@@ -6,7 +6,7 @@
 <title>World Cup Sweepstake 2026</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -38,9 +38,12 @@
   body{
     background:var(--bg);
     color:var(--text);
-    font-family:'Space Grotesk',sans-serif;
+    font-family:'Inter',sans-serif;
     min-height:100vh;
     overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    text-rendering:optimizeLegibility;
   }
 
   /* ---- BACKGROUND ---- */
@@ -76,7 +79,7 @@
     background:none;
     border:none;
     color:var(--muted);
-    font-family:'Space Grotesk',sans-serif;
+    font-family:'Inter',sans-serif;
     font-size:11px;
     font-weight:600;
     letter-spacing:.06em;
@@ -98,7 +101,7 @@
   .page-hero{margin-bottom:28px;padding-top:8px}
   .page-hero h1{
     font-family:'Outfit',sans-serif;
-    font-size:clamp(36px,7vw,64px);
+    font-size:clamp(32px,6vw,56px);
     font-weight:900;
     line-height:.95;
     letter-spacing:-.02em;
@@ -180,8 +183,8 @@
   }
   .rule:hover{border-color:var(--border-bright);transform:translateY(-2px)}
   .rule-icon{font-size:24px;margin-bottom:10px}
-  .rule-ttl{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px}
-  .rule p{font-size:12px;color:var(--muted);line-height:1.7}
+  .rule-ttl{font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px}
+  .rule p{font-size:13px;color:var(--muted);line-height:1.65}
   .rule p strong{color:var(--text);font-weight:600}
 
   /* ---- DRAW INPUTS ---- */
@@ -204,7 +207,7 @@
     color:var(--gold);
     min-width:20px;
   }
-  .p-inp input{background:none;border:none;outline:none;color:var(--text);font-size:14px;font-family:'Space Grotesk',sans-serif;width:100%;font-weight:500}
+  .p-inp input{background:none;border:none;outline:none;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;width:100%;font-weight:500}
   .p-inp input::placeholder{color:var(--muted2)}
   .p-inp input:disabled{opacity:.5;cursor:not-allowed}
 
@@ -233,7 +236,7 @@
     padding:10px 24px;
     background:transparent;
     color:var(--red);
-    font-family:'Space Grotesk',sans-serif;
+    font-family:'Inter',sans-serif;
     font-size:13px;
     font-weight:600;
     border:1px solid rgba(255,77,109,.3);
@@ -353,7 +356,7 @@
     border:1px solid var(--border);
     border-radius:20px;
     color:var(--muted);
-    font-family:'Space Grotesk',sans-serif;
+    font-family:'Inter',sans-serif;
     font-size:12px;font-weight:600;
     letter-spacing:.05em;
     cursor:pointer;
@@ -540,7 +543,7 @@
     border-radius:var(--radius-xs);
     padding:10px 14px;color:var(--text);
     font-size:14px;outline:none;
-    font-family:'Space Grotesk',sans-serif;
+    font-family:'Inter',sans-serif;
   }
   #drawGate input[type=password]:focus{border-color:var(--gold)}
   #resetUnlock input[type=password]{
@@ -550,7 +553,7 @@
     border-radius:var(--radius-xs);
     padding:10px 14px;color:var(--text);
     font-size:14px;outline:none;
-    font-family:'Space Grotesk',sans-serif;
+    font-family:'Inter',sans-serif;
   }
   #resetError{font-size:12px;color:var(--red);margin-top:8px;display:none}
   #drawError{font-size:12px;color:var(--red);margin-top:8px;display:none}
@@ -1427,6 +1430,55 @@
 
     // Open modal
     document.getElementById('playerModal').classList.add('open');
+  };
+
+
+  // ---- ELIMINATIONS ----
+  async function initEliminations() {
+    document.getElementById('elim-loading').style.display = 'block';
+    document.getElementById('elim-content').style.display = 'none';
+    await fetchDraw(); await fetchElim();
+    localElimState = new Set(eliminatedTeams);
+    document.getElementById('elim-loading').style.display = 'none';
+    document.getElementById('elim-content').style.display = 'block';
+    const nm = document.getElementById('no-draw-elim');
+    const ep = document.getElementById('elimPanel');
+    const ea = document.getElementById('elim-actions');
+    if (!currentDraw) { nm.style.display='block'; ep.innerHTML=''; ea.style.display='none'; return; }
+    nm.style.display='none'; ea.style.display='block';
+    document.getElementById('elimSavedMsg').textContent = '';
+    const groups = {};
+    TEAMS.forEach(t => { if (!groups[t.group]) groups[t.group]=[]; groups[t.group].push(t); });
+    ep.innerHTML = '';
+    Object.keys(groups).sort().forEach(g => {
+      const sec = document.createElement('div'); sec.className='elim-section';
+      sec.innerHTML=`<div class="elim-grp-title">GROUP ${g}</div><div class="elim-grid" id="eg-${g}"></div>`;
+      ep.appendChild(sec);
+      const grid = document.getElementById('eg-'+g);
+      groups[g].forEach(t => {
+        const isE = localElimState.has(t.name);
+        const div = document.createElement('div');
+        div.className='elim-team'+(isE?' is-elim':'');
+        div.innerHTML=`<span class="ef">${t.flag}</span><span class="en">${t.name}</span><span class="elim-chk">${isE?'✕':''}</span>`;
+        div.onclick=()=>{
+          if(localElimState.has(t.name)){localElimState.delete(t.name);div.className='elim-team';div.querySelector('.elim-chk').textContent='';}
+          else{localElimState.add(t.name);div.className='elim-team is-elim';div.querySelector('.elim-chk').textContent='✕';}
+        };
+        grid.appendChild(div);
+      });
+    });
+  }
+
+  window.saveEliminations = async function() {
+    const btn = document.getElementById('saveElimBtn');
+    btn.disabled=true; btn.textContent='SAVING...';
+    try {
+      await set(ref(db,'eliminations'), [...localElimState]);
+      eliminatedTeams = new Set(localElimState);
+      btn.textContent='✅ SAVED!';
+      document.getElementById('elimSavedMsg').textContent='Eliminations updated for everyone.';
+      setTimeout(()=>{ btn.disabled=false; btn.textContent='SAVE ELIMINATIONS'; }, 2000);
+    } catch(e) { btn.disabled=false; btn.textContent='SAVE ELIMINATIONS'; alert('Error saving.'); }
   };
 
   initSetup();
