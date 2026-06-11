@@ -165,7 +165,15 @@
       <div class="card-title">👥 PLAYER NAMES</div>
       <div class="players-grid" id="playersGrid"></div>
     </div>
-    <button class="draw-btn" id="drawBtn" onclick="runDraw()">&#127922; DRAW TEAMS</button>
+    <div id="drawGate" style="display:none;background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.25);border-radius:10px;padding:16px;margin-bottom:12px">
+      <p style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:10px">&#128274; A draw already exists. Enter the admin password to redraw:</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="password" id="drawPassword" placeholder="Admin password" style="flex:1;min-width:160px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;font-family:Inter,sans-serif"/>
+        <button onclick="unlockAndDraw()" style="padding:10px 18px;background:var(--gold);color:var(--ink);font-family:Bebas Neue,sans-serif;font-size:16px;letter-spacing:.08em;border:none;border-radius:8px;cursor:pointer">CONFIRM REDRAW</button>
+      </div>
+      <p id="drawError" style="font-size:11px;color:rgba(255,80,80,.8);margin-top:8px;display:none">&#10060; Incorrect password. Only the admin can redraw.</p>
+    </div>
+    <button class="draw-btn" id="drawBtn" onclick="handleDrawClick()">&#127922; DRAW TEAMS</button>
     <div id="resetSection" style="display:none;margin-top:14px">
       <div id="resetLocked" style="text-align:center">
         <button class="reset-btn" onclick="showResetUnlock()">&#128274; RESET DRAW (ADMIN ONLY)</button>
@@ -364,7 +372,7 @@
       notice.style.display = 'block';
       document.getElementById('resetSection').style.display = 'block';
       currentDraw.forEach((p,i) => { const el = document.getElementById('p'+i); if(el) el.value = p.name; });
-      document.getElementById('drawBtn').textContent = '&#127922; REDRAW TEAMS';
+      document.getElementById('drawBtn').textContent = '&#127922; REDRAW TEAMS (ADMIN ONLY)';
     } else {
       notice.style.display = 'none';
       document.getElementById('resetSection').style.display = 'none';
@@ -373,6 +381,30 @@
     document.getElementById('setup-loading').style.display = 'none';
     document.getElementById('setup-content').style.display = 'block';
   }
+
+  window.handleDrawClick = function() {
+    // If no draw exists yet, run freely. If draw exists, require password.
+    if (currentDraw) {
+      const gate = document.getElementById('drawGate');
+      gate.style.display = gate.style.display === 'none' ? 'block' : 'none';
+      document.getElementById('drawPassword').value = '';
+      document.getElementById('drawError').style.display = 'none';
+      if (gate.style.display === 'block') document.getElementById('drawPassword').focus();
+    } else {
+      runDraw();
+    }
+  };
+
+  window.unlockAndDraw = function() {
+    const pwd = document.getElementById('drawPassword').value;
+    if (pwd !== ADMIN_PASSWORD) {
+      document.getElementById('drawError').style.display = 'block';
+      document.getElementById('drawPassword').value = '';
+      return;
+    }
+    document.getElementById('drawGate').style.display = 'none';
+    runDraw();
+  };
 
   window.runDraw = async function() {
     const btn = document.getElementById('drawBtn');
@@ -386,6 +418,8 @@
       btn.textContent = '✅ DRAW SAVED!';
       document.getElementById('draw-exists-notice').style.display = 'block';
       document.getElementById('resetSection').style.display = 'block';
+      document.getElementById('drawGate').style.display = 'none';
+      document.getElementById('drawPassword').value = '';
       setTimeout(() => {
         btn.disabled = false; btn.textContent = '🎲 REDRAW TEAMS';
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
