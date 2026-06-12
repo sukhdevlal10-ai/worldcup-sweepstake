@@ -1032,6 +1032,42 @@
     color:transparent;
   }
 
+
+  /* ---- MOBILE NAV ---- */
+  @media (max-width: 600px) {
+    .nav {
+      padding: 6px 8px;
+      gap: 5px;
+    }
+    .nav .button {
+      padding: 0.45rem 0.6rem;
+      min-width: unset;
+      flex: 1;
+    }
+    .nav .button .sparkle {
+      display: none;
+    }
+    .nav .button .text_button {
+      font-size: 9px;
+      letter-spacing: .03em;
+    }
+    .nav .button::before,
+    .nav .button::after {
+      border-radius: var(--border_radius);
+    }
+    .nav .button .dots_border {
+      border-radius: var(--border_radius);
+    }
+  }
+  @media (max-width: 400px) {
+    .nav .button .text_button {
+      font-size: 8px;
+    }
+    .nav .button {
+      padding: 0.4rem 0.4rem;
+    }
+  }
+
 </style>
 </head>
 <body>
