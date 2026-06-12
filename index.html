@@ -707,6 +707,331 @@
   ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px}
   ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2)}
 
+
+  /* ---- UIVERSE NAV BUTTONS ---- */
+  .nav{
+    display:flex;
+    background:rgba(10,10,15,.92);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    border-bottom:1px solid var(--border);
+    overflow-x:auto;
+    position:sticky;
+    top:0;
+    z-index:200;
+    scrollbar-width:none;
+    padding:10px 16px;
+    gap:10px;
+  }
+  .nav::-webkit-scrollbar{display:none}
+
+  /* Override old nav button styles */
+  .nav .btn{
+    cursor:pointer;
+    position:relative;
+    min-width:110px;
+    height:42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:5px;
+    border:solid 2px #bda049;
+    border-style:outset;
+    background-color:#37363e;
+    overflow:visible;
+    flex-shrink:0;
+    box-shadow:
+      inset 1px 1px 3px #0002,
+      inset 2px 2px 6px #0002,
+      inset 4px 4px 12px #0002,
+      inset 6px 6px 24px #0002,
+      1px 1px 2px 0px #000,
+      1px 1px 3px 0px #fff6,
+      2px 2px 4px 1px #fb02,
+      -1px -1px 2px -1px #000,
+      -2px -2px 4px 1px #000;
+    text-decoration:none;
+    padding:0;
+  }
+  .nav .fabric{
+    position:absolute;inset:0;
+    border-radius:inherit;
+    background:inherit;
+    filter:url(#linen);
+    pointer-events:none;
+  }
+  .nav .btn::before{
+    content:"";
+    position:absolute;
+    inset:-14px;
+    border-radius:12px;
+    background-color:rgb(24,26,26);
+    filter:url(#bump);
+    z-index:-1;
+  }
+  .nav .btn::after{
+    content:"";
+    position:absolute;
+    inset:-15px;
+    border-radius:13px;
+    border:1px solid #0004;
+    border-bottom-color:#0008;
+    box-shadow:
+      inset 1px 1px 1px #ffc6,
+      inset 1px 3px 3px #ffc6,
+      inset 1px 5px 5px #0006,
+      inset 1px 7px 7px #0006,
+      0 4px 6px -3px #0004,
+      0 12px 8px -8px #0007;
+    z-index:-1;
+  }
+  .nav .txt{
+    position:absolute;
+    z-index:2;
+    color:#f0f0f5;
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.07em;
+    text-transform:uppercase;
+    text-shadow:0 1px 1px #555;
+    transition:opacity 300ms ease;
+    opacity:1;
+    white-space:nowrap;
+    pointer-events:none;
+  }
+  .nav .txt.active-label{
+    color:var(--gold);
+  }
+  .nav .btn.active .txt{
+    color:var(--gold);
+  }
+  .nav .btn.active{
+    border-color:#f5c842;
+    background-color:#2a2800;
+    box-shadow:
+      inset 1px 1px 3px #0002,
+      inset 2px 2px 6px #0002,
+      1px 1px 2px 0px #000,
+      1px 1px 3px 0px #fff6,
+      2px 2px 4px 1px #f5c84244,
+      0 0 12px 2px rgba(245,200,66,.18);
+  }
+  .nav .shadow{
+    z-index:-2;
+    position:absolute;
+    bottom:-28px;
+    width:120%;height:10px;
+    background:linear-gradient(to bottom,#000,50%,#0000);
+    filter:blur(7px);
+    opacity:0.22;
+    transition:opacity 300ms ease,transform 300ms ease;
+    pointer-events:none;
+  }
+  .nav .shadow.left{
+    background-color:#aa001555;
+    transform:skewX(-70deg) translateX(-18px);
+  }
+  .nav .shadow.right{
+    transform:skewX(70deg) translateX(18px) scaleY(1);
+  }
+  .nav .light{
+    position:absolute;
+    left:10%;top:-28px;
+    width:130px;height:40px;
+    border-radius:50%;
+    background-color:#fa5;
+    filter:blur(20px);
+    z-index:1;
+    mix-blend-mode:color-dodge;
+    opacity:0;
+    transition:opacity 300ms ease;
+    pointer-events:none;
+  }
+  .nav .dot{
+    position:absolute;
+    top:-9px;right:0;
+    width:5px;height:4px;
+    border-radius:1px;
+    border:1px solid #fff5;
+    background-color:#fff1;
+    box-shadow:
+      0 0 1px 0px rgba(255,42,9,0),
+      0 0 6px 0px rgba(255,42,9,0),
+      0 0 12px 1px rgba(255,42,9,0);
+    pointer-events:none;
+  }
+  .nav .btn:hover .light{opacity:0.45}
+  .nav .btn:hover .shadow.left{transform:skewX(-75deg) translateX(-30px)}
+  .nav .btn:hover .shadow.right{transform:skewX(75deg) translateX(30px) scaleY(1.1)}
+  .nav .btn:hover .shadow{opacity:0.35}
+  .nav .btn.active .dot{
+    animation:navPulse 1.2s ease infinite;
+  }
+  @keyframes navPulse{
+    50%{
+      box-shadow:0 0 1px 0px rgba(245,200,66,1),0 0 6px 0px rgba(245,200,66,1),0 0 12px 1px rgba(245,200,66,1);
+      background-color:var(--gold);
+    }
+  }
+
+
+  /* ---- UIVERSE NAV BUTTONS (MuhammadHasann) — recoloured to gold ---- */
+  .nav{
+    display:flex;
+    background:rgba(10,10,15,.92);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    border-bottom:1px solid var(--border);
+    overflow-x:auto;
+    position:sticky;top:0;z-index:200;
+    scrollbar-width:none;
+    padding:8px 12px;
+    gap:6px;
+    align-items:center;
+  }
+  .nav::-webkit-scrollbar{display:none}
+
+  .nav .button{
+    --gold-700: hsla(43, 90%, 12%, 1);
+    --border_radius: 9999px;
+    --transtion: 0.3s ease-in-out;
+    --offset: 2px;
+    cursor:pointer;
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:0.4rem;
+    transform-origin:center;
+    padding:0.6rem 1.1rem;
+    background-color:transparent;
+    border:none;
+    border-radius:var(--border_radius);
+    transform:scale(calc(1 + (var(--active,0) * 0.08)));
+    transition:transform var(--transtion);
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .nav .button::before{
+    content:"";
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:100%;height:100%;
+    background-color:var(--gold-700);
+    border-radius:var(--border_radius);
+    box-shadow:
+      inset 0 0.5px hsl(43,90%,70%),
+      inset 0 -1px 2px 0 hsl(0,0%,0%),
+      0px 4px 10px -4px hsla(0,0%,0%,calc(1 - var(--active,0))),
+      0 0 0 calc(var(--active,0) * 0.35rem) hsla(43,95%,55%,0.55);
+    transition:all var(--transtion);
+    z-index:0;
+  }
+  .nav .button::after{
+    content:"";
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:100%;height:100%;
+    background-color:hsla(43,95%,55%,0.75);
+    background-image:
+      radial-gradient(at 51% 89%, hsla(43,80%,74%,1) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(38,70%,60%,1) 0px, transparent 50%),
+      radial-gradient(at 22% 91%, hsla(43,70%,60%,1) 0px, transparent 50%);
+    background-position:top;
+    opacity:var(--active,0);
+    border-radius:var(--border_radius);
+    transition:opacity var(--transtion);
+    z-index:2;
+  }
+  .nav .button:is(:hover,:focus-visible){ --active:1; }
+  .nav .button:active{ transform:scale(1); }
+
+  /* Active tab — keep glow on permanently */
+  .nav .button.active{ --active:1; }
+  .nav .button.active::before{
+    box-shadow:
+      inset 0 0.5px hsl(43,90%,70%),
+      inset 0 -1px 2px 0 hsl(0,0%,0%),
+      0 0 0 0.3rem hsla(43,95%,55%,0.45),
+      0 0 20px 2px hsla(43,95%,55%,0.2);
+  }
+
+  .nav .button .dots_border{
+    --size_border:calc(100% + 2px);
+    overflow:hidden;
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:var(--size_border);height:var(--size_border);
+    background-color:transparent;
+    border-radius:var(--border_radius);
+    z-index:-10;
+  }
+  .nav .button .dots_border::before{
+    content:"";
+    position:absolute;
+    top:30%;left:50%;
+    transform:rotate(0deg);
+    transform-origin:left;
+    width:100%;height:1.5rem;
+    background-color:var(--gold);
+    mask:linear-gradient(transparent 0%,white 120%);
+    animation:navRotate 2s linear infinite;
+  }
+  .nav .button.active .dots_border::before{
+    background-color:var(--gold);
+    animation-duration:1.2s;
+  }
+  @keyframes navRotate{ to{ transform:rotate(360deg); } }
+
+  .nav .button .sparkle{
+    position:relative;z-index:10;
+    width:1.1rem;flex-shrink:0;
+  }
+  .nav .button .sparkle .path{
+    fill:currentColor;stroke:currentColor;
+    transform-origin:center;
+    color:rgba(245,200,66,0.9);
+    transition:color var(--transtion);
+  }
+  .nav .button:is(:hover,:focus,.active) .sparkle .path{
+    color:var(--ink);
+    animation:navPath 1.5s linear 0.5s infinite;
+  }
+  .nav .button .sparkle .path:nth-child(1){ --scale_path_1:1.2; }
+  .nav .button .sparkle .path:nth-child(2){ --scale_path_2:1.2; }
+  .nav .button .sparkle .path:nth-child(3){ --scale_path_3:1.2; }
+  @keyframes navPath{
+    0%,34%,71%,100%{ transform:scale(1); }
+    17%{ transform:scale(var(--scale_path_1,1)); }
+    49%{ transform:scale(var(--scale_path_2,1)); }
+    83%{ transform:scale(var(--scale_path_3,1)); }
+  }
+
+  .nav .button .text_button{
+    position:relative;z-index:10;
+    background-image:linear-gradient(
+      90deg,
+      hsla(43,90%,75%,1) 0%,
+      hsla(43,90%,75%,var(--active,0)) 120%
+    );
+    background-clip:text;
+    -webkit-background-clip:text;
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:rgba(245,200,66,0.85);
+    transition:color var(--transtion);
+    white-space:nowrap;
+  }
+  .nav .button:is(:hover,:focus-visible,.active) .text_button{
+    color:transparent;
+  }
+
 </style>
 </head>
 <body>
@@ -718,12 +1043,60 @@
 <div class="spotlight spotlight-3"></div>
 
 <nav class="nav">
-  <button class="active" onclick="showPage('rules',this)">📋 Rules</button>
-  <button onclick="showPage('setup',this)">🎲 Draw</button>
-  <button onclick="showPage('teams',this)">👕 Teams</button>
-  <button onclick="showPage('leaderboard',this)">🏆 Board</button>
-  <button onclick="showPage('fixtures',this)">⚽ Fixtures</button>
-  <button onclick="showPage('eliminations',this)">❌ Elims</button>
+  <button class="button active" onclick="showPage('rules',this)">
+    <div class="dots_border"></div>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="sparkle">
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M14.187 8.096L15 5.25L15.813 8.096C16.0231 8.83114 16.4171 9.50062 16.9577 10.0413C17.4984 10.5819 18.1679 10.9759 18.903 11.186L21.75 12L18.904 12.813C18.1689 13.0231 17.4994 13.4171 16.9587 13.9577C16.4181 14.4984 16.0241 15.1679 15.814 15.903L15 18.75L14.187 15.904C13.9769 15.1689 13.5829 14.4994 13.0423 13.9587C12.5016 13.4181 11.8321 13.0241 11.097 12.814L8.25 12L11.096 11.187C11.8311 10.9769 12.5006 10.5829 13.0413 10.0423C13.5819 9.50162 13.9759 8.83214 14.186 8.097L14.187 8.096Z"></path>
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M6 14.25L5.741 15.285C5.59267 15.8785 5.28579 16.4206 4.85319 16.8532C4.42059 17.2858 3.87853 17.5927 3.285 17.741L2.25 18L3.285 18.259C3.87853 18.4073 4.42059 18.7142 4.85319 19.1468C5.28579 19.5794 5.59267 20.1215 5.741 20.715L6 21.75L6.259 20.715C6.40725 20.1216 6.71398 19.5796 7.14639 19.147C7.5788 18.7144 8.12065 18.4075 8.714 18.259L9.75 18L8.714 17.741C8.12065 17.5925 7.5788 17.2856 7.14639 16.853C6.71398 16.4204 6.40725 15.8784 6.259 15.285L6 14.25Z"></path>
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M6.5 4L6.303 4.5915C6.24777 4.75718 6.15472 4.90774 6.03123 5.03123C5.90774 5.15472 5.75718 5.24777 5.5915 5.303L5 5.5L5.5915 5.697C5.75718 5.75223 5.90774 5.84528 6.03123 5.96877C6.15472 6.09226 6.24777 6.24282 6.303 6.4085L6.5 7L6.697 6.4085C6.75223 6.24282 6.84528 6.09226 6.96877 5.96877C7.09226 5.84528 7.24282 5.75223 7.4085 5.697L8 5.5L7.4085 5.303C7.24282 5.24777 7.09226 5.15472 6.96877 5.03123C6.84528 4.90774 6.75223 4.75718 6.697 4.5915L6.5 4Z"></path>
+    </svg>
+    <span class="text_button">📋 Rules</span>
+  </button>
+  <button class="button" onclick="showPage('setup',this)">
+    <div class="dots_border"></div>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="sparkle">
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M14.187 8.096L15 5.25L15.813 8.096C16.0231 8.83114 16.4171 9.50062 16.9577 10.0413C17.4984 10.5819 18.1679 10.9759 18.903 11.186L21.75 12L18.904 12.813C18.1689 13.0231 17.4994 13.4171 16.9587 13.9577C16.4181 14.4984 16.0241 15.1679 15.814 15.903L15 18.75L14.187 15.904C13.9769 15.1689 13.5829 14.4994 13.0423 13.9587C12.5016 13.4181 11.8321 13.0241 11.097 12.814L8.25 12L11.096 11.187C11.8311 10.9769 12.5006 10.5829 13.0413 10.0423C13.5819 9.50162 13.9759 8.83214 14.186 8.097L14.187 8.096Z"></path>
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M6 14.25L5.741 15.285C5.59267 15.8785 5.28579 16.4206 4.85319 16.8532C4.42059 17.2858 3.87853 17.5927 3.285 17.741L2.25 18L3.285 18.259C3.87853 18.4073 4.42059 18.7142 4.85319 19.1468C5.28579 19.5794 5.59267 20.1215 5.741 20.715L6 21.75L6.259 20.715C6.40725 20.1216 6.71398 19.5796 7.14639 19.147C7.5788 18.7144 8.12065 18.4075 8.714 18.259L9.75 18L8.714 17.741C8.12065 17.5925 7.5788 17.2856 7.14639 16.853C6.71398 16.4204 6.40725 15.8784 6.259 15.285L6 14.25Z"></path>
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M6.5 4L6.303 4.5915C6.24777 4.75718 6.15472 4.90774 6.03123 5.03123C5.90774 5.15472 5.75718 5.24777 5.5915 5.303L5 5.5L5.5915 5.697C5.75718 5.75223 5.90774 5.84528 6.03123 5.96877C6.15472 6.09226 6.24777 6.24282 6.303 6.4085L6.5 7L6.697 6.4085C6.75223 6.24282 6.84528 6.09226 6.96877 5.96877C7.09226 5.84528 7.24282 5.75223 7.4085 5.697L8 5.5L7.4085 5.303C7.24282 5.24777 7.09226 5.15472 6.96877 5.03123C6.84528 4.90774 6.75223 4.75718 6.697 4.5915L6.5 4Z"></path>
+    </svg>
+    <span class="text_button">🎲 Draw</span>
+  </button>
+  <button class="button" onclick="showPage('teams',this)">
+    <div class="dots_border"></div>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="sparkle">
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M14.187 8.096L15 5.25L15.813 8.096C16.0231 8.83114 16.4171 9.50062 16.9577 10.0413C17.4984 10.5819 18.1679 10.9759 18.903 11.186L21.75 12L18.904 12.813C18.1689 13.0231 17.4994 13.4171 16.9587 13.9577C16.4181 14.4984 16.0241 15.1679 15.814 15.903L15 18.75L14.187 15.904C13.9769 15.1689 13.5829 14.4994 13.0423 13.9587C12.5016 13.4181 11.8321 13.0241 11.097 12.814L8.25 12L11.096 11.187C11.8311 10.9769 12.5006 10.5829 13.0413 10.0423C13.5819 9.50162 13.9759 8.83214 14.186 8.097L14.187 8.096Z"></path>
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M6 14.25L5.741 15.285C5.59267 15.8785 5.28579 16.4206 4.85319 16.8532C4.42059 17.2858 3.87853 17.5927 3.285 17.741L2.25 18L3.285 18.259C3.87853 18.4073 4.42059 18.7142 4.85319 19.1468C5.28579 19.5794 5.59267 20.1215 5.741 20.715L6 21.75L6.259 20.715C6.40725 20.1216 6.71398 19.5796 7.14639 19.147C7.5788 18.7144 8.12065 18.4075 8.714 18.259L9.75 18L8.714 17.741C8.12065 17.5925 7.5788 17.2856 7.14639 16.853C6.71398 16.4204 6.40725 15.8784 6.259 15.285L6 14.25Z"></path>
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M6.5 4L6.303 4.5915C6.24777 4.75718 6.15472 4.90774 6.03123 5.03123C5.90774 5.15472 5.75718 5.24777 5.5915 5.303L5 5.5L5.5915 5.697C5.75718 5.75223 5.90774 5.84528 6.03123 5.96877C6.15472 6.09226 6.24777 6.24282 6.303 6.4085L6.5 7L6.697 6.4085C6.75223 6.24282 6.84528 6.09226 6.96877 5.96877C7.09226 5.84528 7.24282 5.75223 7.4085 5.697L8 5.5L7.4085 5.303C7.24282 5.24777 7.09226 5.15472 6.96877 5.03123C6.84528 4.90774 6.75223 4.75718 6.697 4.5915L6.5 4Z"></path>
+    </svg>
+    <span class="text_button">👕 Teams</span>
+  </button>
+  <button class="button" onclick="showPage('leaderboard',this)">
+    <div class="dots_border"></div>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="sparkle">
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M14.187 8.096L15 5.25L15.813 8.096C16.0231 8.83114 16.4171 9.50062 16.9577 10.0413C17.4984 10.5819 18.1679 10.9759 18.903 11.186L21.75 12L18.904 12.813C18.1689 13.0231 17.4994 13.4171 16.9587 13.9577C16.4181 14.4984 16.0241 15.1679 15.814 15.903L15 18.75L14.187 15.904C13.9769 15.1689 13.5829 14.4994 13.0423 13.9587C12.5016 13.4181 11.8321 13.0241 11.097 12.814L8.25 12L11.096 11.187C11.8311 10.9769 12.5006 10.5829 13.0413 10.0423C13.5819 9.50162 13.9759 8.83214 14.186 8.097L14.187 8.096Z"></path>
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M6 14.25L5.741 15.285C5.59267 15.8785 5.28579 16.4206 4.85319 16.8532C4.42059 17.2858 3.87853 17.5927 3.285 17.741L2.25 18L3.285 18.259C3.87853 18.4073 4.42059 18.7142 4.85319 19.1468C5.28579 19.5794 5.59267 20.1215 5.741 20.715L6 21.75L6.259 20.715C6.40725 20.1216 6.71398 19.5796 7.14639 19.147C7.5788 18.7144 8.12065 18.4075 8.714 18.259L9.75 18L8.714 17.741C8.12065 17.5925 7.5788 17.2856 7.14639 16.853C6.71398 16.4204 6.40725 15.8784 6.259 15.285L6 14.25Z"></path>
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M6.5 4L6.303 4.5915C6.24777 4.75718 6.15472 4.90774 6.03123 5.03123C5.90774 5.15472 5.75718 5.24777 5.5915 5.303L5 5.5L5.5915 5.697C5.75718 5.75223 5.90774 5.84528 6.03123 5.96877C6.15472 6.09226 6.24777 6.24282 6.303 6.4085L6.5 7L6.697 6.4085C6.75223 6.24282 6.84528 6.09226 6.96877 5.96877C7.09226 5.84528 7.24282 5.75223 7.4085 5.697L8 5.5L7.4085 5.303C7.24282 5.24777 7.09226 5.15472 6.96877 5.03123C6.84528 4.90774 6.75223 4.75718 6.697 4.5915L6.5 4Z"></path>
+    </svg>
+    <span class="text_button">🏆 Board</span>
+  </button>
+  <button class="button" onclick="showPage('fixtures',this)">
+    <div class="dots_border"></div>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="sparkle">
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M14.187 8.096L15 5.25L15.813 8.096C16.0231 8.83114 16.4171 9.50062 16.9577 10.0413C17.4984 10.5819 18.1679 10.9759 18.903 11.186L21.75 12L18.904 12.813C18.1689 13.0231 17.4994 13.4171 16.9587 13.9577C16.4181 14.4984 16.0241 15.1679 15.814 15.903L15 18.75L14.187 15.904C13.9769 15.1689 13.5829 14.4994 13.0423 13.9587C12.5016 13.4181 11.8321 13.0241 11.097 12.814L8.25 12L11.096 11.187C11.8311 10.9769 12.5006 10.5829 13.0413 10.0423C13.5819 9.50162 13.9759 8.83214 14.186 8.097L14.187 8.096Z"></path>
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M6 14.25L5.741 15.285C5.59267 15.8785 5.28579 16.4206 4.85319 16.8532C4.42059 17.2858 3.87853 17.5927 3.285 17.741L2.25 18L3.285 18.259C3.87853 18.4073 4.42059 18.7142 4.85319 19.1468C5.28579 19.5794 5.59267 20.1215 5.741 20.715L6 21.75L6.259 20.715C6.40725 20.1216 6.71398 19.5796 7.14639 19.147C7.5788 18.7144 8.12065 18.4075 8.714 18.259L9.75 18L8.714 17.741C8.12065 17.5925 7.5788 17.2856 7.14639 16.853C6.71398 16.4204 6.40725 15.8784 6.259 15.285L6 14.25Z"></path>
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M6.5 4L6.303 4.5915C6.24777 4.75718 6.15472 4.90774 6.03123 5.03123C5.90774 5.15472 5.75718 5.24777 5.5915 5.303L5 5.5L5.5915 5.697C5.75718 5.75223 5.90774 5.84528 6.03123 5.96877C6.15472 6.09226 6.24777 6.24282 6.303 6.4085L6.5 7L6.697 6.4085C6.75223 6.24282 6.84528 6.09226 6.96877 5.96877C7.09226 5.84528 7.24282 5.75223 7.4085 5.697L8 5.5L7.4085 5.303C7.24282 5.24777 7.09226 5.15472 6.96877 5.03123C6.84528 4.90774 6.75223 4.75718 6.697 4.5915L6.5 4Z"></path>
+    </svg>
+    <span class="text_button">⚽ Fixtures</span>
+  </button>
+  <button class="button" onclick="showPage('eliminations',this)">
+    <div class="dots_border"></div>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="sparkle">
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M14.187 8.096L15 5.25L15.813 8.096C16.0231 8.83114 16.4171 9.50062 16.9577 10.0413C17.4984 10.5819 18.1679 10.9759 18.903 11.186L21.75 12L18.904 12.813C18.1689 13.0231 17.4994 13.4171 16.9587 13.9577C16.4181 14.4984 16.0241 15.1679 15.814 15.903L15 18.75L14.187 15.904C13.9769 15.1689 13.5829 14.4994 13.0423 13.9587C12.5016 13.4181 11.8321 13.0241 11.097 12.814L8.25 12L11.096 11.187C11.8311 10.9769 12.5006 10.5829 13.0413 10.0423C13.5819 9.50162 13.9759 8.83214 14.186 8.097L14.187 8.096Z"></path>
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M6 14.25L5.741 15.285C5.59267 15.8785 5.28579 16.4206 4.85319 16.8532C4.42059 17.2858 3.87853 17.5927 3.285 17.741L2.25 18L3.285 18.259C3.87853 18.4073 4.42059 18.7142 4.85319 19.1468C5.28579 19.5794 5.59267 20.1215 5.741 20.715L6 21.75L6.259 20.715C6.40725 20.1216 6.71398 19.5796 7.14639 19.147C7.5788 18.7144 8.12065 18.4075 8.714 18.259L9.75 18L8.714 17.741C8.12065 17.5925 7.5788 17.2856 7.14639 16.853C6.71398 16.4204 6.40725 15.8784 6.259 15.285L6 14.25Z"></path>
+      <path class="path" stroke-linejoin="round" stroke-linecap="round" stroke="black" fill="black" d="M6.5 4L6.303 4.5915C6.24777 4.75718 6.15472 4.90774 6.03123 5.03123C5.90774 5.15472 5.75718 5.24777 5.5915 5.303L5 5.5L5.5915 5.697C5.75718 5.75223 5.90774 5.84528 6.03123 5.96877C6.15472 6.09226 6.24777 6.24282 6.303 6.4085L6.5 7L6.697 6.4085C6.75223 6.24282 6.84528 6.09226 6.96877 5.96877C7.09226 5.84528 7.24282 5.75223 7.4085 5.697L8 5.5L7.4085 5.303C7.24282 5.24777 7.09226 5.15472 6.96877 5.03123C6.84528 4.90774 6.75223 4.75718 6.697 4.5915L6.5 4Z"></path>
+    </svg>
+    <span class="text_button">❌ Elims</span>
+  </button>
 </nav>
 
 <!-- RULES -->
@@ -969,7 +1342,7 @@
 
   window.showPage = function(id, btn) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.nav .button').forEach(b => b.classList.remove('active'));
     document.getElementById('page-' + id).classList.add('active');
     if (btn) btn.classList.add('active');
     if (id === 'setup') initSetup();
@@ -1076,9 +1449,9 @@
       setTimeout(() => {
         btn.disabled = false; btn.textContent = '🎲 REDRAW TEAMS';
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.nav .button').forEach(b => b.classList.remove('active'));
         document.getElementById('page-teams').classList.add('active');
-        document.querySelector('.nav button:nth-child(3)').classList.add('active');
+        document.querySelectorAll('.nav .button')[2].classList.add('active');
         initTeams();
       }, 1400);
     } catch(e) { btn.disabled = false; btn.textContent = '🎲 DRAW TEAMS'; alert('Could not save. Check connection.'); }
@@ -1719,5 +2092,35 @@
 })();
 </script>
 
+
+<!-- Uiverse button SVG filters -->
+<svg class="filter" style="position:absolute;width:0;height:0">
+  <filter id="bump">
+    <feTurbulence result="noise" numOctaves="4" baseFrequency="0.678" type="fractalNoise"></feTurbulence>
+    <feSpecularLighting result="specular" lighting-color="#fffffa" specularExponent="15" specularConstant="0.7" surfaceScale="0.22" in="noise">
+      <fePointLight z="210" y="-50" x="40"></fePointLight>
+    </feSpecularLighting>
+    <feComposite result="noise2" operator="in" in="specular" in2="SourceGraphic"></feComposite>
+    <feBlend mode="difference" in2="noise2" in="SourceGraphic" result="out"></feBlend>
+    <feBlend mode="overlay" in2="out" in="SourceGraphic"></feBlend>
+  </filter>
+</svg>
+<svg class="filter" style="position:absolute;width:0;height:0">
+  <defs>
+    <filter id="linen">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9 0.03" numOctaves="2" seed="8" result="verticalNoise"></feTurbulence>
+      <feTurbulence type="fractalNoise" baseFrequency="0.03 0.9" numOctaves="2" seed="12" result="horizontalNoise"></feTurbulence>
+      <feBlend in="verticalNoise" in2="horizontalNoise" mode="multiply" result="woven"></feBlend>
+      <feComponentTransfer in="woven" result="threadContrast">
+        <feFuncR type="gamma" amplitude="1.3" exponent="2.4"></feFuncR>
+        <feFuncG type="gamma" amplitude="1.3" exponent="2.4"></feFuncG>
+        <feFuncB type="gamma" amplitude="1.3" exponent="2.4"></feFuncB>
+      </feComponentTransfer>
+      <feGaussianBlur in="threadContrast" stdDeviation="0.22" result="softThreads"></feGaussianBlur>
+      <feComposite in="softThreads" in2="SourceGraphic" operator="in" result="textureMask"></feComposite>
+      <feBlend in="SourceGraphic" in2="textureMask" mode="color-burn"></feBlend>
+    </filter>
+  </defs>
+</svg>
 </body>
 </html>
